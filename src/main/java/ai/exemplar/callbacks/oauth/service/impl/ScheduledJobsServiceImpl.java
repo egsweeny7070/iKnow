@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 public class ScheduledJobsServiceImpl implements ScheduledJobsService {
@@ -29,7 +30,9 @@ public class ScheduledJobsServiceImpl implements ScheduledJobsService {
     @Override
     public void invokeCronJob() {
         repository.list().parallelStream()
-                .filter(token -> token.getExpiration().isBefore(LocalDateTime.now()))
+                .filter(token -> token.getExpiration()
+                        .isBefore(LocalDateTime.now()
+                                .plus(10L, ChronoUnit.MINUTES)))
                 .forEach(token -> providers.get(token.getProvider())
                         .renewToken(token));
     }
