@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class OAuthToken {
 
-    private String username;
+    private String id;
 
     private String provider;
 
@@ -18,25 +18,28 @@ public class OAuthToken {
 
     private LocalDateTime expiration;
 
+    private LocalDateTime lastFetched;
+
     private String internalId;
 
-    public OAuthToken(String username, String provider, String token, String refreshToken, LocalDateTime created, LocalDateTime updated, LocalDateTime expiration, String internalId) {
-        this.username = username;
+    public OAuthToken(String id, String provider, String token, String refreshToken, LocalDateTime created, LocalDateTime updated, LocalDateTime expiration, LocalDateTime lastFetched, String internalId) {
+        this.id = id;
         this.provider = provider;
         this.token = token;
         this.refreshToken = refreshToken;
         this.created = created;
         this.updated = updated;
         this.expiration = expiration;
+        this.lastFetched = lastFetched;
         this.internalId = internalId;
     }
 
-    public String getUsername() {
-        return username;
+    public String getId() {
+        return id;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getProvider() {
@@ -85,6 +88,14 @@ public class OAuthToken {
 
     public void setExpiration(LocalDateTime expiration) {
         this.expiration = expiration;
+    }
+
+    public LocalDateTime getLastFetched() {
+        return lastFetched;
+    }
+
+    public void setLastFetched(LocalDateTime lastFetched) {
+        this.lastFetched = lastFetched;
     }
 
     public String getInternalId() {

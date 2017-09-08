@@ -93,6 +93,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
                         LocalDateTime.now()
                                 .plus(exchangeResponseBody
                                         .getExpires_in(), ChronoUnit.SECONDS),
+                        null,
                         null
                 ));
 
@@ -115,7 +116,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
     @Override
     public void renewToken(OAuthToken token) {
         try {
-            log.debug("renew started for user=" + token.getUsername());
+            log.debug("renew started for id=" + token.getId());
 
             HttpClient client = HttpClientBuilder.create().build();
             HttpPost request = new HttpPost("https://accounts.spotify.com/api/token");
@@ -136,7 +137,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
             HttpResponse response = client.execute(request);
 
             if (response.getStatusLine().getStatusCode() != 200) {
-                log.debug("renew failed for user=" + token.getUsername());
+                log.debug("renew failed for id=" + token.getId());
 
                 throw new RuntimeException("token exchange failed: " +
                         response.getStatusLine().getStatusCode() + " " +
@@ -150,7 +151,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
             );
 
             repository.save(new OAuthToken(
-                    token.getUsername(),
+                    token.getId(),
                     PROVIDER_NAME,
                     exchangeResponseBody.getAccess_token(),
                     token.getRefreshToken(),
@@ -159,6 +160,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
                     LocalDateTime.now()
                             .plus(exchangeResponseBody
                                     .getExpires_in(), ChronoUnit.SECONDS),
+                    token.getLastFetched(),
                     null
             ));
 

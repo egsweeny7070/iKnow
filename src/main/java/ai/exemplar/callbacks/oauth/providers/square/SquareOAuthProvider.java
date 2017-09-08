@@ -81,6 +81,7 @@ public class SquareOAuthProvider implements OAuthProvider {
                         LocalDateTime.now(),
                         LocalDateTime.now(),
                         ZonedDateTime.parse(exchangeResponseBody.getExpires_at()).toLocalDateTime(),
+                        null,
                         exchangeResponseBody.getMerchant_id()
                 ));
 
@@ -103,7 +104,7 @@ public class SquareOAuthProvider implements OAuthProvider {
     @Override
     public void renewToken(OAuthToken token) {
         try {
-            log.debug("renew started for user=" + token.getUsername());
+            log.debug("renew started for id=" + token.getId());
 
             HttpClient client = HttpClientBuilder.create().build();
 
@@ -123,7 +124,7 @@ public class SquareOAuthProvider implements OAuthProvider {
             HttpResponse response = client.execute(request);
 
             if (response.getStatusLine().getStatusCode() != 200) {
-                log.debug("renew failed for user=" + token.getUsername());
+                log.debug("renew failed for id=" + token.getId());
 
                 throw new RuntimeException("token exchange failed");
             }
@@ -135,13 +136,14 @@ public class SquareOAuthProvider implements OAuthProvider {
             );
 
             repository.save(new OAuthToken(
-                    token.getUsername(),
+                    token.getId(),
                     PROVIDER_NAME,
                     exchangeResponseBody.getAccess_token(),
                     null,
                     token.getCreated(),
                     LocalDateTime.now(),
                     ZonedDateTime.parse(exchangeResponseBody.getExpires_at()).toLocalDateTime(),
+                    token.getLastFetched(),
                     exchangeResponseBody.getMerchant_id()
             ));
 

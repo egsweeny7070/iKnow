@@ -26,18 +26,21 @@ public class OAuthTokenSchema {
 
     private LocalDateTime expiration;
 
+    private LocalDateTime lastFetched;
+
     private String internalId;
 
     public OAuthTokenSchema() {
     }
 
-    public OAuthTokenSchema(String key, String token, String refreshToken, LocalDateTime created, LocalDateTime updated, LocalDateTime expiration, String internalId) {
+    public OAuthTokenSchema(String key, String token, String refreshToken, LocalDateTime created, LocalDateTime updated, LocalDateTime expiration, LocalDateTime lastFetched, String internalId) {
         this.key = key;
         this.token = token;
         this.refreshToken = refreshToken;
         this.created = created;
         this.updated = updated;
         this.expiration = expiration;
+        this.lastFetched = lastFetched;
         this.internalId = internalId;
     }
 
@@ -98,6 +101,16 @@ public class OAuthTokenSchema {
         this.expiration = expiration;
     }
 
+    @DynamoDBTypeConverted(converter = LocalDateTimeTypeConverter.class)
+    @DynamoDBAttribute(attributeName = "lastFetched")
+    public LocalDateTime getLastFetched() {
+        return lastFetched;
+    }
+
+    public void setLastFetched(LocalDateTime lastFetched) {
+        this.lastFetched = lastFetched;
+    }
+
     @DynamoDBAttribute(attributeName = "internalId")
     public String getInternalId() {
         return internalId;
@@ -110,18 +123,19 @@ public class OAuthTokenSchema {
     public static OAuthTokenSchema primaryKey(String username, String provider) {
         return new OAuthTokenSchema(
                 username + PRIMARY_KEY_DELIMITER + provider,
-                null, null, null, null, null, null
+                null, null, null, null, null, null, null
         );
     }
 
     public static OAuthTokenSchema fromModel(OAuthToken token) {
         return new OAuthTokenSchema(
-                token.getUsername() + PRIMARY_KEY_DELIMITER + token.getProvider(),
+                token.getId() + PRIMARY_KEY_DELIMITER + token.getProvider(),
                 token.getToken(),
                 token.getRefreshToken(),
                 token.getCreated(),
                 token.getUpdated(),
                 token.getExpiration(),
+                token.getLastFetched(),
                 token.getInternalId()
         );
     }
@@ -135,6 +149,7 @@ public class OAuthTokenSchema {
                 this.getCreated(),
                 this.getUpdated(),
                 this.getExpiration(),
+                this.getLastFetched(),
                 this.getInternalId()
         );
     }

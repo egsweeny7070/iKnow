@@ -25,9 +25,8 @@ public class DynamoDBOAuthTokenRepository implements OAuthTokenRepository {
                 amazonDynamoDB,
                 new DynamoDBMapperConfig.Builder()
                         .withConversionSchema(ConversionSchemas.V2)
-                        .withTableNameOverride(new DynamoDBMapperConfig.TableNameOverride(
-                                "OAuthToken"
-                        ))
+                        .withTableNameOverride(new DynamoDBMapperConfig
+                                .TableNameOverride("OAuthToken"))
                         .build()
         );
 
