@@ -1,6 +1,8 @@
 package ai.exemplar.persistence;
 
 import ai.exemplar.persistence.dynamodb.DynamoDBSpotifyHistoryRepository;
+import ai.exemplar.persistence.dynamodb.DynamoDBSquareLocationsRepository;
+import ai.exemplar.persistence.dynamodb.DynamoDBSquarePaymentsRepository;
 import dagger.Module;
 import dagger.Provides;
 import ai.exemplar.persistence.dynamodb.DynamoDBOAuthTokenRepository;
@@ -24,5 +26,21 @@ public class DynamoDBPersistenceModule {
             DynamoDBSpotifyHistoryRepository spotifyHistoryRepository
     ) {
         return spotifyHistoryRepository;
+    }
+
+    @Provides
+    @Singleton
+    public static SquareLocationRepository provideSquareLocationRepository(
+            DynamoDBSquareLocationsRepository squareLocationsRepository
+    ) {
+        return squareLocationsRepository;
+    }
+
+    @Provides
+    @Singleton
+    public static SquarePaymentsRepository provideSquarePaymentsRepository(
+            DynamoDBSquarePaymentsRepository squarePaymentsRepository
+    ) {
+        return squarePaymentsRepository;
     }
 }

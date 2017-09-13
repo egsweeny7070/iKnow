@@ -2,7 +2,6 @@ package ai.exemplar.api.spotify.impl;
 
 import ai.exemplar.api.spotify.SpotifyApiProvider;
 import ai.exemplar.api.spotify.model.PlayHistoryObject;
-import ai.exemplar.api.spotify.model.RecentlyPlayedResponse;
 import ai.exemplar.utils.json.GsonFabric;
 import com.amazonaws.util.IOUtils;
 import com.google.gson.Gson;
@@ -60,6 +59,19 @@ public class SpotifyApiProviderImpl implements SpotifyApiProvider {
             log.error("getRecentlyPlayed request failed:", e);
 
             throw new RuntimeException(e);
+        }
+    }
+
+    public static class RecentlyPlayedResponse {
+
+        private List<PlayHistoryObject> items;
+
+        public List<PlayHistoryObject> getItems() {
+            return items;
+        }
+
+        public void setItems(List<PlayHistoryObject> items) {
+            this.items = items;
         }
     }
 }

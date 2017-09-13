@@ -2,6 +2,8 @@ package ai.exemplar.api;
 
 import ai.exemplar.api.spotify.SpotifyApiProvider;
 import ai.exemplar.api.spotify.impl.SpotifyApiProviderImpl;
+import ai.exemplar.api.square.SquareApiProvider;
+import ai.exemplar.api.square.impl.SquareApiProviderImpl;
 import dagger.Module;
 import dagger.Provides;
 
@@ -14,5 +16,11 @@ public class ApiProvidersModule {
     @Singleton
     public static SpotifyApiProvider provideSpotifyApiProvider() {
         return new SpotifyApiProviderImpl();
+    }
+
+    @Provides
+    @Singleton
+    public static SquareApiProvider provideSquareApiProvider() {
+        return new SquareApiProviderImpl();
     }
 }
