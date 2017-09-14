@@ -1,10 +1,12 @@
 package ai.exemplar.data.fetchers.spotify;
 
 import ai.exemplar.api.spotify.SpotifyApiProvider;
+import ai.exemplar.api.spotify.model.AudioFeaturesObject;
 import ai.exemplar.api.spotify.model.PlayHistoryObject;
 import ai.exemplar.data.fetchers.DataFetcher;
 import ai.exemplar.persistence.OAuthTokenRepository;
 import ai.exemplar.persistence.SpotifyHistoryRepository;
+import ai.exemplar.persistence.dynamodb.schema.spotify.AudioFeaturesDocumentSchema;
 import ai.exemplar.persistence.dynamodb.schema.spotify.LinkDocumentSchema;
 import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
 import ai.exemplar.persistence.dynamodb.schema.spotify.TrackDocumentSchema;
@@ -14,9 +16,7 @@ import org.apache.log4j.Logger;
 import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SpotifyDataFetcher implements DataFetcher {
@@ -84,7 +84,8 @@ public class SpotifyDataFetcher implements DataFetcher {
                                     playHistoryObject.getTrack().getPreviewUrl(),
                                     playHistoryObject.getTrack().getTrackNumber(),
                                     playHistoryObject.getTrack().getType(),
-                                    playHistoryObject.getTrack().getUri()
+                                    playHistoryObject.getTrack().getUri(),
+                                    null
                             ),
                             Optional.ofNullable(playHistoryObject.getContext())
                                     .map(context -> new LinkDocumentSchema(
@@ -98,6 +99,43 @@ public class SpotifyDataFetcher implements DataFetcher {
                     )).collect(Collectors.toList());
 
             if (!historyItems.isEmpty()) {
+                List<String> ids = new ArrayList<>(
+                        historyItems.stream()
+                                .map(PlayHistoryItemSchema::getTrack)
+                                .map(TrackDocumentSchema::getId)
+                                .collect(Collectors.toSet())
+                );
+
+                Map<String, AudioFeaturesDocumentSchema> features = api
+                        .getAudioFeatures(token.getToken(), ids).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(
+                                AudioFeaturesObject::getId,
+                                audioFeaturesObject -> new AudioFeaturesDocumentSchema(
+                                        audioFeaturesObject.getDuration(),
+                                        audioFeaturesObject.getMode(),
+                                        audioFeaturesObject.getKey(),
+                                        audioFeaturesObject.getTimeSignature(),
+                                        audioFeaturesObject.getTempo(),
+                                        audioFeaturesObject.getAcousticness(),
+                                        audioFeaturesObject.getDanceability(),
+                                        audioFeaturesObject.getEnergy(),
+                                        audioFeaturesObject.getInstrumentalness(),
+                                        audioFeaturesObject.getLiveness(),
+                                        audioFeaturesObject.getLoudness(),
+                                        audioFeaturesObject.getSpeechiness(),
+                                        audioFeaturesObject.getValence()
+                                )
+                        ));
+
+                log.info(String.format("fetched %d spotify track features for key %s", ids.size(), token.getId()));
+
+                historyItems.stream()
+                        .map(PlayHistoryItemSchema::getTrack)
+                        .forEach(track -> track
+                                .setFeatures(features
+                                        .get(track.getId())));
+
                 historyRepository.batchSave(historyItems);
 
                 historyItems.stream()

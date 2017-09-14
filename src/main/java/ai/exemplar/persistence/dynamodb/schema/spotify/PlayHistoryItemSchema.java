@@ -19,6 +19,10 @@ public class PlayHistoryItemSchema {
     public PlayHistoryItemSchema() {
     }
 
+    private PlayHistoryItemSchema(String key) {
+        this.key = key;
+    }
+
     public PlayHistoryItemSchema(String key, LocalDateTime timestamp, TrackDocumentSchema track, LinkDocumentSchema context) {
         this.key = key;
         this.timestamp = timestamp;
@@ -61,5 +65,9 @@ public class PlayHistoryItemSchema {
 
     public void setContext(LinkDocumentSchema context) {
         this.context = context;
+    }
+
+    public static PlayHistoryItemSchema hashKey(String key) {
+        return new PlayHistoryItemSchema(key);
     }
 }

@@ -20,8 +20,8 @@ public class DynamoDBModule {
                 .withRegion(Regions.US_WEST_2)
                 .withCredentials(new AWSStaticCredentialsProvider(
                         new BasicAWSCredentials(
-                                null,
-                                null
+                                "AKIAISEBICZDBSF6DUSQ",
+                                "MEi/bpDFAMAoYL8P5M8UkKta34b/ncPTfLbVwn1z"
                         )
                 ))
                 .build();

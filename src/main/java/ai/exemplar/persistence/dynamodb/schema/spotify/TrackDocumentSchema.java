@@ -42,10 +42,12 @@ public class TrackDocumentSchema {
 
     private String uri;
 
+    private AudioFeaturesDocumentSchema features;
+
     public TrackDocumentSchema() {
     }
 
-    public TrackDocumentSchema(List<LinkDocumentSchema> artists, List<String> markets, Integer discNumber, Integer duration, Boolean explicitLyrics, Map<String, String> externalUrls, String href, String id, Boolean playable, LinkDocumentSchema from, String name, String previewUrl, Integer trackNumber, String type, String uri) {
+    public TrackDocumentSchema(List<LinkDocumentSchema> artists, List<String> markets, Integer discNumber, Integer duration, Boolean explicitLyrics, Map<String, String> externalUrls, String href, String id, Boolean playable, LinkDocumentSchema from, String name, String previewUrl, Integer trackNumber, String type, String uri, AudioFeaturesDocumentSchema features) {
         this.artists = artists;
         this.markets = markets;
         this.discNumber = discNumber;
@@ -61,6 +63,7 @@ public class TrackDocumentSchema {
         this.trackNumber = trackNumber;
         this.type = type;
         this.uri = uri;
+        this.features = features;
     }
 
     @DynamoDBAttribute(attributeName = "artists")
@@ -198,5 +201,14 @@ public class TrackDocumentSchema {
 
     public void setUri(String uri) {
         this.uri = uri;
+    }
+
+    @DynamoDBAttribute(attributeName = "features")
+    public AudioFeaturesDocumentSchema getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(AudioFeaturesDocumentSchema features) {
+        this.features = features;
     }
 }

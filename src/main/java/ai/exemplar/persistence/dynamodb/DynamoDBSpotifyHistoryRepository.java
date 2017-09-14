@@ -4,10 +4,7 @@ import ai.exemplar.persistence.SpotifyHistoryRepository;
 import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
 import ai.exemplar.utils.dynamodb.CreateTableHelper;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.datamodeling.ConversionSchemas;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTableMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import org.apache.log4j.Logger;
 
@@ -39,6 +36,16 @@ public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepositor
         );
 
         this.spotifyHistory = mapper.newTableMapper(PlayHistoryItemSchema.class);
+    }
+
+    @Override
+    public List<PlayHistoryItemSchema> list(String key) {
+        return spotifyHistory.query(
+                new DynamoDBQueryExpression<PlayHistoryItemSchema>()
+                        .withHashKeyValues(PlayHistoryItemSchema
+                                .hashKey(key))
+                        .withConsistentRead(true)
+        );
     }
 
     @Override
