@@ -19,6 +19,7 @@ dependencies {
     apt 'com.google.dagger:dagger-compiler:2.11'
 
     compile 'com.google.code.gson:gson:2.8.1'
+    compile 'com.google.guava:guava:22.0'
 
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
 
