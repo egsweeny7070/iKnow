@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DynamoDBOAuthTokenRepository implements OAuthTokenRepository {
@@ -42,9 +43,10 @@ public class DynamoDBOAuthTokenRepository implements OAuthTokenRepository {
 
     @Override
     public OAuthToken get(String username, String provider) {
-        return tokens.load(OAuthTokenSchema
-                .primaryKey(username, provider).getKey())
-                .toModel();
+        return Optional.ofNullable(tokens
+                .load(OAuthTokenSchema
+                        .primaryKey(username, provider).getKey()))
+                .map(OAuthTokenSchema::toModel).orElse(null);
     }
 
     @Override

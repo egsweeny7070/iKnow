@@ -1,4 +1,4 @@
-package ai.exemplar.callbacks.oauth.service.values;
+package ai.exemplar.utils.lambda;
 
 import java.util.Map;
 

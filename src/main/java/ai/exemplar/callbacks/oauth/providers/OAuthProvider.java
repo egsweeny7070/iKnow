@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface OAuthProvider {
 
-    boolean processOAuthCallback(Map<String, String> queryParameters);
+    String processOAuthCallback(Map<String, String> queryParameters);
 
     void renewToken(OAuthToken token);
 }

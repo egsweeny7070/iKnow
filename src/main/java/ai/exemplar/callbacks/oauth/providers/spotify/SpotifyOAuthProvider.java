@@ -2,10 +2,13 @@ package ai.exemplar.callbacks.oauth.providers.spotify;
 
 import ai.exemplar.callbacks.oauth.providers.OAuthProvider;
 import ai.exemplar.callbacks.oauth.providers.values.OAuthClientCredentials;
+import ai.exemplar.common.LocationsService;
 import ai.exemplar.persistence.OAuthTokenRepository;
+import ai.exemplar.persistence.dynamodb.schema.square.LocationSchema;
 import ai.exemplar.persistence.model.OAuthToken;
 import ai.exemplar.utils.json.GsonFabric;
 import com.amazonaws.util.IOUtils;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -32,19 +35,35 @@ public class SpotifyOAuthProvider implements OAuthProvider {
 
     private final OAuthTokenRepository repository;
 
+    private final LocationsService locationsService;
+
     private final Gson gson = GsonFabric.gson();
 
     @Inject
-    public SpotifyOAuthProvider(@SpotifyClientCredentials OAuthClientCredentials credentials, OAuthTokenRepository repository) {
+    public SpotifyOAuthProvider(@SpotifyClientCredentials OAuthClientCredentials credentials, OAuthTokenRepository repository, LocationsService locationsService) {
         this.credentials = credentials;
         this.repository = repository;
+        this.locationsService = locationsService;
     }
 
     @Override
-    public boolean processOAuthCallback(Map<String, String> queryParameters) {
+    public String processOAuthCallback(Map<String, String> queryParameters) {
         try {
             if (queryParameters.containsKey("code")) {
-                log.debug("received nonce for user=" + queryParameters.get("state"));
+                String[] state = queryParameters.get("state").split("#", 2);
+
+                String location = state[0];
+                String account = state[1];
+
+                log.debug(String.format("received nonce for user=%s, location=%s", account, location));
+
+                LocationSchema locationSchema = locationsService.get(account, location);
+
+                if (locationSchema == null) {
+                    log.warn("location not found for state=" + queryParameters.get("state"));
+
+                    return Boolean.FALSE.toString();
+                }
 
                 String nonse = queryParameters.get("code");
 
@@ -84,7 +103,7 @@ public class SpotifyOAuthProvider implements OAuthProvider {
                 );
 
                 repository.save(new OAuthToken(
-                        queryParameters.get("state"),
+                        location,
                         PROVIDER_NAME,
                         exchangeResponseBody.getAccess_token(),
                         exchangeResponseBody.getRefresh_token(),
@@ -97,12 +116,22 @@ public class SpotifyOAuthProvider implements OAuthProvider {
                         null
                 ));
 
-                return true;
+                locationSchema.setPlayHistoryProviders(
+                        ImmutableMap.<String, String>builder()
+                                .putAll(locationSchema
+                                        .getPlayHistoryProviders())
+                                .put(PROVIDER_NAME, location)
+                                .build()
+                );
+
+                locationsService.save(locationSchema);
+
+                return location;
 
             } else {
-                log.warn("auth discarded for user=" + queryParameters.get("state"));
+                log.warn("auth discarded for state=" + queryParameters.get("state"));
 
-                return false;
+                return Boolean.FALSE.toString();
 
             }
 

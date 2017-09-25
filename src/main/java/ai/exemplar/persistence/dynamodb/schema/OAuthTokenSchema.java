@@ -8,6 +8,9 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @DynamoDBTable(tableName = "OAuthToken")
 public class OAuthTokenSchema {
@@ -141,9 +144,12 @@ public class OAuthTokenSchema {
     }
 
     public OAuthToken toModel() {
+        List<String> key = Arrays.asList(this.getKey()
+                .split(PRIMARY_KEY_DELIMITER));
         return new OAuthToken(
-                this.getKey().split(PRIMARY_KEY_DELIMITER)[0],
-                this.getKey().split(PRIMARY_KEY_DELIMITER)[1],
+                key.subList(0, key.size() - 1).stream()
+                        .collect(Collectors.joining(PRIMARY_KEY_DELIMITER)),
+                key.get(key.size() - 1),
                 this.getToken(),
                 this.getRefreshToken(),
                 this.getCreated(),

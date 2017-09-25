@@ -1,16 +1,15 @@
-package ai.exemplar.persistence;
+package ai.exemplar.common;
 
 import ai.exemplar.persistence.dynamodb.schema.square.LocationSchema;
+import ai.exemplar.persistence.model.OAuthToken;
 
 import java.util.List;
 
-public interface SquareLocationRepository {
+public interface LocationsService {
 
-    List<LocationSchema> list(String account);
+    List<LocationSchema> locations(OAuthToken token);
 
     LocationSchema get(String account, String id);
 
     void save(LocationSchema location);
-
-    void batchSave(List<LocationSchema> batch);
 }

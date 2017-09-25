@@ -2,10 +2,12 @@ package ai.exemplar.persistence.dynamodb.schema.square;
 
 import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import ai.exemplar.utils.dynamodb.converters.StringListTypeConverter;
+import ai.exemplar.utils.dynamodb.converters.StringMapTypeConverter;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @DynamoDBTable(tableName = "SquareLocation")
 public class LocationSchema {
@@ -34,6 +36,8 @@ public class LocationSchema {
 
     private LocalDateTime lastFetched;
 
+    private Map<String, String> playHistoryProviders;
+
     public LocationSchema() {
     }
 
@@ -41,7 +45,7 @@ public class LocationSchema {
         this.account = account;
     }
 
-    public LocationSchema(String account, String id, String name, String businessName, String businessType, String nickname, String email, String phone, String country, String locality, List<String> address, LocalDateTime lastFetched) {
+    public LocationSchema(String account, String id, String name, String businessName, String businessType, String nickname, String email, String phone, String country, String locality, List<String> address, Map<String, String> playHistoryProviders, LocalDateTime lastFetched) {
         this.account = account;
         this.id = id;
         this.name = name;
@@ -53,6 +57,7 @@ public class LocationSchema {
         this.country = country;
         this.locality = locality;
         this.address = address;
+        this.playHistoryProviders = playHistoryProviders;
         this.lastFetched = lastFetched;
     }
 
@@ -164,6 +169,16 @@ public class LocationSchema {
 
     public void setLastFetched(LocalDateTime lastFetched) {
         this.lastFetched = lastFetched;
+    }
+
+    @DynamoDBTypeConverted(converter = StringMapTypeConverter.class)
+    @DynamoDBAttribute(attributeName = "playHistoryProviders")
+    public Map<String, String> getPlayHistoryProviders() {
+        return playHistoryProviders;
+    }
+
+    public void setPlayHistoryProviders(Map<String, String> playHistoryProviders) {
+        this.playHistoryProviders = playHistoryProviders;
     }
 
     public static LocationSchema hashKey(String account) {

@@ -38,7 +38,7 @@ public class SquareOAuthProvider implements OAuthProvider {
     }
 
     @Override
-    public boolean processOAuthCallback(Map<String, String> queryParameters) {
+    public String processOAuthCallback(Map<String, String> queryParameters) {
         try {
             if (queryParameters.containsKey("code")) {
                 log.debug("received nonce for user=" + queryParameters.get("state"));
@@ -85,12 +85,12 @@ public class SquareOAuthProvider implements OAuthProvider {
                         exchangeResponseBody.getMerchant_id()
                 ));
 
-                return true;
+                return Boolean.TRUE.toString();
 
             } else {
                 log.warn("auth discarded for user=" + queryParameters.get("state"));
 
-                return false;
+                return Boolean.FALSE.toString();
 
             }
 

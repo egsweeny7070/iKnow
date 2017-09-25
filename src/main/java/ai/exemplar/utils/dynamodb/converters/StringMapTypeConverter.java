@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverter;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class StringMapTypeConverter implements DynamoDBTypeConverter<String, Map<String, String>> {
@@ -19,7 +20,7 @@ public class StringMapTypeConverter implements DynamoDBTypeConverter<String, Map
 
     @Override
     public Map<String, String> unconvert(String object) {
-        return object == null ? null
+        return object == null ? Collections.emptyMap()
                 : gson.fromJson(object, new TypeToken<Map<String, String>>() {}.getType());
     }
 }

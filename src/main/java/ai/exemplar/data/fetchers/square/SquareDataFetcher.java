@@ -4,6 +4,7 @@ import ai.exemplar.api.square.SquareApiProvider;
 import ai.exemplar.api.square.model.GlobalAddress;
 import ai.exemplar.api.square.model.Money;
 import ai.exemplar.api.square.model.PaymentItemDetail;
+import ai.exemplar.common.LocationsService;
 import ai.exemplar.data.fetchers.DataFetcher;
 import ai.exemplar.persistence.OAuthTokenRepository;
 import ai.exemplar.persistence.SquareLocationRepository;
@@ -16,9 +17,7 @@ import org.apache.log4j.Logger;
 import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,84 +31,28 @@ public class SquareDataFetcher implements DataFetcher {
 
     private final SquareApiProvider api;
 
-    private final SquareLocationRepository locationRepository;
+    private final LocationsService locationsService;
 
     private final SquarePaymentsRepository historyRepository;
 
     @Inject
-    public SquareDataFetcher(OAuthTokenRepository tokensRepository, SquareApiProvider api, SquareLocationRepository locationRepository, SquarePaymentsRepository historyRepository) {
+    public SquareDataFetcher(OAuthTokenRepository tokensRepository, SquareApiProvider api, LocationsService locationsService, SquarePaymentsRepository historyRepository) {
         this.tokensRepository = tokensRepository;
         this.api = api;
-        this.locationRepository = locationRepository;
+        this.locationsService = locationsService;
         this.historyRepository = historyRepository;
     }
 
     @Override
     public void fetchData(OAuthToken token) {
         try {
-            locations(token).forEach(location ->
+            locationsService.locations(token).forEach(location ->
                     fetchPayments(location, token)
             );
 
         } catch (Throwable e) {
             log.error(String.format("failed to fetch square data for key %s", token.getId()), e);
         }
-    }
-
-    private List<LocationSchema> locations(OAuthToken token) {
-        if (Optional.ofNullable(token.getLastFetched())
-                .map(lastFetched -> lastFetched
-                        .isBefore(LocalDateTime.now()
-                                .minus(1L, ChronoUnit.DAYS)))
-                .orElse(true)) {
-
-            return fetchLocations(token);
-
-        } else {
-
-            return locationRepository
-                    .list(token.getId());
-
-        }
-    }
-
-    private List<LocationSchema> fetchLocations(OAuthToken token) {
-        List<LocationSchema> locations = api.listLocations(token.getToken()).stream()
-                .map(merchant -> new LocationSchema(
-                        token.getId(),
-                        merchant.getId(),
-                        merchant.getName(),
-                        merchant.getBusinessName(),
-                        merchant.getBusinessType(),
-                        merchant.nickname(),
-                        merchant.getEmail(),
-                        merchant.phone(),
-                        merchant.getCountry(),
-                        Optional.ofNullable(merchant.getAddress())
-                                .map(GlobalAddress::getLocality).orElse(null),
-                        Optional.ofNullable(merchant.getAddress())
-                                .map(GlobalAddress::address).orElse(null),
-                        null
-                )).collect(Collectors.toList());
-
-        log.info(String.format("fetched %d square locations for key %s", locations.size(), token.getId()));
-
-        locationRepository.batchSave(locations);
-
-        tokensRepository
-                .save(new OAuthToken(
-                        token.getId(),
-                        token.getProvider(),
-                        token.getToken(),
-                        token.getRefreshToken(),
-                        token.getCreated(),
-                        token.getUpdated(),
-                        token.getExpiration(),
-                        LocalDateTime.now(),
-                        token.getInternalId()
-                ));
-
-        return locations;
     }
 
     private void fetchPayments(LocationSchema location, OAuthToken token) {
@@ -212,7 +155,7 @@ public class SquareDataFetcher implements DataFetcher {
                         location.setLastFetched(lastItem
                                 .getTimestamp());
 
-                        locationRepository
+                        locationsService
                                 .save(location);
                     });
 

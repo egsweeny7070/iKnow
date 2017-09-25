@@ -1,4 +1,4 @@
-package ai.exemplar.utils;
+package ai.exemplar.utils.test;
 
 import ai.exemplar.api.ApiProvidersModule;
 import ai.exemplar.api.spotify.SpotifyApiProvider;

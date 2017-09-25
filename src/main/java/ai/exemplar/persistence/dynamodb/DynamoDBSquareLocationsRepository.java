@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 
 public class DynamoDBSquareLocationsRepository implements SquareLocationRepository {
 
@@ -46,6 +47,13 @@ public class DynamoDBSquareLocationsRepository implements SquareLocationReposito
                                 .hashKey(account))
                         .withConsistentRead(true)
         );
+    }
+
+    @Override
+    public LocationSchema get(String account, String id) {
+        return Optional.ofNullable(squareLocations
+                .load(account, id))
+                .orElse(null);
     }
 
     @Override

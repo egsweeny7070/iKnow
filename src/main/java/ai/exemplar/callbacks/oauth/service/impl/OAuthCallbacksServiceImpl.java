@@ -2,8 +2,8 @@ package ai.exemplar.callbacks.oauth.service.impl;
 
 import ai.exemplar.callbacks.oauth.providers.OAuthProvider;
 import ai.exemplar.callbacks.oauth.service.OAuthCallbacksService;
-import ai.exemplar.callbacks.oauth.service.values.LambdaRequest;
-import ai.exemplar.callbacks.oauth.service.values.LambdaResponse;
+import ai.exemplar.utils.lambda.LambdaRequest;
+import ai.exemplar.utils.lambda.LambdaResponse;
 import ai.exemplar.utils.json.GsonFabric;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
@@ -38,7 +38,9 @@ public class OAuthCallbacksServiceImpl implements OAuthCallbacksService {
 
             String provider = request.getPathParameters().get("proxy");
 
-            boolean result = providers.get(provider).processOAuthCallback(request.getQueryStringParameters());
+            String result = providers.get(provider)
+                    .processOAuthCallback(request
+                            .getQueryStringParameters());
 
             IOUtils.copy(
                     new ByteArrayInputStream(
@@ -47,7 +49,10 @@ public class OAuthCallbacksServiceImpl implements OAuthCallbacksService {
                                             false, 302,
                                             Collections.singletonMap(
                                                     "Location",
-                                                    "http://admin.exemplar.ai/dashboard?" + provider + "=" + result
+                                                    String.format(
+                                                            "https://admin.exemplar.ai/dashboard?%s=%s",
+                                                            provider, result
+                                                    )
                                             ),
                                             null
                                     )
