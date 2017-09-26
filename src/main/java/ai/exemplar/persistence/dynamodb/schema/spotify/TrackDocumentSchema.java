@@ -16,6 +16,8 @@ public class TrackDocumentSchema {
 
     private List<String> markets;
 
+    private AlbumDocumentSchema album;
+
     private Integer discNumber;
 
     private Integer duration;
@@ -38,6 +40,8 @@ public class TrackDocumentSchema {
 
     private Integer trackNumber;
 
+    private Integer popularity;
+
     private String type;
 
     private String uri;
@@ -47,9 +51,10 @@ public class TrackDocumentSchema {
     public TrackDocumentSchema() {
     }
 
-    public TrackDocumentSchema(List<LinkDocumentSchema> artists, List<String> markets, Integer discNumber, Integer duration, Boolean explicitLyrics, Map<String, String> externalUrls, String href, String id, Boolean playable, LinkDocumentSchema from, String name, String previewUrl, Integer trackNumber, String type, String uri, AudioFeaturesDocumentSchema features) {
+    public TrackDocumentSchema(List<LinkDocumentSchema> artists, List<String> markets, AlbumDocumentSchema album, Integer discNumber, Integer duration, Boolean explicitLyrics, Map<String, String> externalUrls, String href, String id, Boolean playable, LinkDocumentSchema from, String name, String previewUrl, Integer trackNumber, Integer popularity, String type, String uri, AudioFeaturesDocumentSchema features) {
         this.artists = artists;
         this.markets = markets;
+        this.album = album;
         this.discNumber = discNumber;
         this.duration = duration;
         this.explicitLyrics = explicitLyrics;
@@ -61,6 +66,7 @@ public class TrackDocumentSchema {
         this.name = name;
         this.previewUrl = previewUrl;
         this.trackNumber = trackNumber;
+        this.popularity = popularity;
         this.type = type;
         this.uri = uri;
         this.features = features;
@@ -83,6 +89,15 @@ public class TrackDocumentSchema {
 
     public void setMarkets(List<String> markets) {
         this.markets = markets;
+    }
+
+    @DynamoDBAttribute(attributeName = "album")
+    public AlbumDocumentSchema getAlbum() {
+        return album;
+    }
+
+    public void setAlbum(AlbumDocumentSchema album) {
+        this.album = album;
     }
 
     @DynamoDBAttribute(attributeName = "discNumber")
@@ -183,6 +198,15 @@ public class TrackDocumentSchema {
 
     public void setTrackNumber(Integer trackNumber) {
         this.trackNumber = trackNumber;
+    }
+
+    @DynamoDBAttribute(attributeName = "popularity")
+    public Integer getPopularity() {
+        return popularity;
+    }
+
+    public void setPopularity(Integer popularity) {
+        this.popularity = popularity;
     }
 
     @DynamoDBAttribute(attributeName = "type")

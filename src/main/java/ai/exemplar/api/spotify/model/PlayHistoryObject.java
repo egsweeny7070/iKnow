@@ -6,18 +6,18 @@ import java.time.LocalDateTime;
 
 public class PlayHistoryObject {
 
-    private SimplifiedTrackObject track;
+    private TrackObject track;
 
     @SerializedName("played_at")
     private LocalDateTime playedAt;
 
     private LinkObject context;
 
-    public SimplifiedTrackObject getTrack() {
+    public TrackObject getTrack() {
         return track;
     }
 
-    public void setTrack(SimplifiedTrackObject track) {
+    public void setTrack(TrackObject track) {
         this.track = track;
     }
 

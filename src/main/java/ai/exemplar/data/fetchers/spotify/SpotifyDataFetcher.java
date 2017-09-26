@@ -1,15 +1,14 @@
 package ai.exemplar.data.fetchers.spotify;
 
 import ai.exemplar.api.spotify.SpotifyApiProvider;
+import ai.exemplar.api.spotify.model.AlbumObject;
 import ai.exemplar.api.spotify.model.AudioFeaturesObject;
 import ai.exemplar.api.spotify.model.PlayHistoryObject;
+import ai.exemplar.api.spotify.model.TrackObject;
 import ai.exemplar.data.fetchers.DataFetcher;
 import ai.exemplar.persistence.OAuthTokenRepository;
 import ai.exemplar.persistence.SpotifyHistoryRepository;
-import ai.exemplar.persistence.dynamodb.schema.spotify.AudioFeaturesDocumentSchema;
-import ai.exemplar.persistence.dynamodb.schema.spotify.LinkDocumentSchema;
-import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
-import ai.exemplar.persistence.dynamodb.schema.spotify.TrackDocumentSchema;
+import ai.exemplar.persistence.dynamodb.schema.spotify.*;
 import ai.exemplar.persistence.model.OAuthToken;
 import org.apache.log4j.Logger;
 
@@ -64,6 +63,7 @@ public class SpotifyDataFetcher implements DataFetcher {
                                                     linkObject.getUri()
                                             )).collect(Collectors.toList()),
                                     playHistoryObject.getTrack().getAvailableMarkets(),
+                                    null,
                                     playHistoryObject.getTrack().getDiscNumber(),
                                     playHistoryObject.getTrack().getDurationMs(),
                                     playHistoryObject.getTrack().getExplicit(),
@@ -83,6 +83,7 @@ public class SpotifyDataFetcher implements DataFetcher {
                                     playHistoryObject.getTrack().getName(),
                                     playHistoryObject.getTrack().getPreviewUrl(),
                                     playHistoryObject.getTrack().getTrackNumber(),
+                                    null,
                                     playHistoryObject.getTrack().getType(),
                                     playHistoryObject.getTrack().getUri(),
                                     null
@@ -128,13 +129,81 @@ public class SpotifyDataFetcher implements DataFetcher {
                                 )
                         ));
 
-                log.info(String.format("fetched %d spotify track features for key %s", ids.size(), token.getId()));
+                log.info(String.format("fetched %d spotify track features for key %s", features.size(), token.getId()));
+
+                Map<String, TrackDetails> details = api
+                        .getTracks(token.getToken(), ids).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(
+                                TrackObject::getId,
+                                trackObject -> new TrackDetails(
+                                        Optional.ofNullable(trackObject.getAlbum())
+                                                .map(AlbumObject::getId).orElse(null),
+                                        trackObject.getPopularity()
+                                )
+                        ));
+
+                log.info(String.format("fetched %d spotify track details for key %s", details.size(), token.getId()));
+
+                List<String> albumIds = new ArrayList<>(
+                        details.values().stream()
+                                .map(TrackDetails::getAlbumId)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet())
+                );
+
+                Map<String, AlbumDocumentSchema> albums = api
+                        .getAlbums(token.getToken(), albumIds).stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toMap(
+                                AlbumObject::getId,
+                                albumObject -> new AlbumDocumentSchema(
+                                        albumObject.getAlbumType(),
+                                        albumObject.getArtists().stream()
+                                                .map(linkObject -> new LinkDocumentSchema(
+                                                        linkObject.getExternalUrls(),
+                                                        linkObject.getHref(),
+                                                        linkObject.getId(),
+                                                        linkObject.getName(),
+                                                        linkObject.getType(),
+                                                        linkObject.getUri()
+                                                )).collect(Collectors.toList()),
+                                        albumObject.getMarkets(),
+                                        albumObject.getGenres(),
+                                        albumObject.getHref(),
+                                        albumObject.getId(),
+                                        albumObject.getImages().stream()
+                                                .map(imageObject -> new ImageDocumentSchema(
+                                                        imageObject.getHeight(),
+                                                        imageObject.getWidth(),
+                                                        imageObject.getUrl()
+                                                )).collect(Collectors.toList()),
+                                        albumObject.getLabel(),
+                                        albumObject.getName(),
+                                        albumObject.getPopularity(),
+                                        albumObject.getReleaseDate(),
+                                        albumObject.getReleaseDatePrecision(),
+                                        albumObject.getUri()
+                                )
+                        ));
+
+                log.info(String.format("fetched %d spotify albums for key %s", albums.size(), token.getId()));
 
                 historyItems.stream()
                         .map(PlayHistoryItemSchema::getTrack)
-                        .forEach(track -> track
-                                .setFeatures(features
-                                        .get(track.getId())));
+                        .forEach(track -> {
+                            track.setFeatures(features
+                                    .get(track.getId()));
+
+                            track.setPopularity(details
+                                    .get(track.getId())
+                                    .getPopularity());
+
+                            track.setAlbum(albums
+                                    .get(details
+                                            .get(track.getId())
+                                            .getAlbumId()));
+                        });
 
                 historyRepository.batchSave(historyItems);
 
@@ -158,6 +227,26 @@ public class SpotifyDataFetcher implements DataFetcher {
 
         } catch (Throwable e) {
             log.error(String.format("failed to fetch spotify history for key %s", token.getId()), e);
+        }
+    }
+
+    private static class TrackDetails {
+
+        private final String albumId;
+
+        private final Integer popularity;
+
+        public TrackDetails(String albumId, Integer popularity) {
+            this.albumId = albumId;
+            this.popularity = popularity;
+        }
+
+        public String getAlbumId() {
+            return albumId;
+        }
+
+        public Integer getPopularity() {
+            return popularity;
         }
     }
 }

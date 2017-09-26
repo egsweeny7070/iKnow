@@ -5,7 +5,9 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Map;
 
-public class SimplifiedTrackObject {
+public class TrackObject {
+
+    private AlbumObject album;
 
     private List<LinkObject> artists;
 
@@ -19,6 +21,9 @@ public class SimplifiedTrackObject {
     private Integer durationMs;
 
     private Boolean explicit;
+
+    @SerializedName("external_ids")
+    private Map<String, String> externalIds;
 
     @SerializedName("external_urls")
     private Map<String, String> externalUrls;
@@ -35,6 +40,8 @@ public class SimplifiedTrackObject {
 
     private String name;
 
+    private Integer popularity;
+
     @SerializedName("preview_url")
     private String previewUrl;
 
@@ -44,6 +51,14 @@ public class SimplifiedTrackObject {
     private String type;
 
     private String uri;
+
+    public AlbumObject getAlbum() {
+        return album;
+    }
+
+    public void setAlbum(AlbumObject album) {
+        this.album = album;
+    }
 
     public List<LinkObject> getArtists() {
         return artists;
@@ -83,6 +98,14 @@ public class SimplifiedTrackObject {
 
     public void setExplicit(Boolean explicit) {
         this.explicit = explicit;
+    }
+
+    public Map<String, String> getExternalIds() {
+        return externalIds;
+    }
+
+    public void setExternalIds(Map<String, String> externalIds) {
+        this.externalIds = externalIds;
     }
 
     public Map<String, String> getExternalUrls() {
@@ -131,6 +154,14 @@ public class SimplifiedTrackObject {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getPopularity() {
+        return popularity;
+    }
+
+    public void setPopularity(Integer popularity) {
+        this.popularity = popularity;
     }
 
     public String getPreviewUrl() {
