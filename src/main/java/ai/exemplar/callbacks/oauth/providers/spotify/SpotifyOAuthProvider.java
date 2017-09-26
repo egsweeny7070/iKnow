@@ -52,6 +52,12 @@ public class SpotifyOAuthProvider implements OAuthProvider {
             if (queryParameters.containsKey("code")) {
                 String[] state = queryParameters.get("state").split("#", 2);
 
+                if (state.length != 2) {
+                    log.warn("incorrect format of the state=" + queryParameters.get("state"));
+
+                    return Boolean.FALSE.toString();
+                }
+
                 String location = state[0];
                 String account = state[1];
 

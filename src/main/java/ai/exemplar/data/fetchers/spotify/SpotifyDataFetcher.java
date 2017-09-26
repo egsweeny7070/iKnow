@@ -10,6 +10,7 @@ import ai.exemplar.persistence.OAuthTokenRepository;
 import ai.exemplar.persistence.SpotifyHistoryRepository;
 import ai.exemplar.persistence.dynamodb.schema.spotify.*;
 import ai.exemplar.persistence.model.OAuthToken;
+import com.google.common.collect.Lists;
 import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
@@ -145,16 +146,16 @@ public class SpotifyDataFetcher implements DataFetcher {
 
                 log.info(String.format("fetched %d spotify track details for key %s", details.size(), token.getId()));
 
-                List<String> albumIds = new ArrayList<>(
+                Map<String, AlbumDocumentSchema> albums = Lists.partition(new ArrayList<>(
                         details.values().stream()
                                 .map(TrackDetails::getAlbumId)
                                 .filter(Objects::nonNull)
-                                .collect(Collectors.toSet())
-                );
-
-                Map<String, AlbumDocumentSchema> albums = api
-                        .getAlbums(token.getToken(), albumIds).stream()
-                        .filter(Objects::nonNull)
+                                .collect(Collectors.toSet())),
+                        20
+                ).stream()
+                        .flatMap(albumIds -> api
+                                .getAlbums(token.getToken(), albumIds).stream()
+                                .filter(Objects::nonNull))
                         .collect(Collectors.toMap(
                                 AlbumObject::getId,
                                 albumObject -> new AlbumDocumentSchema(
@@ -192,17 +193,18 @@ public class SpotifyDataFetcher implements DataFetcher {
                 historyItems.stream()
                         .map(PlayHistoryItemSchema::getTrack)
                         .forEach(track -> {
-                            track.setFeatures(features
-                                    .get(track.getId()));
+                            track.setFeatures(Optional.ofNullable(features
+                                    .get(track.getId())).orElse(null));
 
-                            track.setPopularity(details
-                                    .get(track.getId())
-                                    .getPopularity());
+                            track.setPopularity(Optional.ofNullable(details
+                                    .get(track.getId()))
+                                    .map(TrackDetails::getPopularity).orElse(null));
 
-                            track.setAlbum(albums
-                                    .get(details
-                                            .get(track.getId())
-                                            .getAlbumId()));
+                            track.setAlbum(Optional.ofNullable(details.get(track.getId()))
+                                    .map(TrackDetails::getAlbumId)
+                                    .flatMap(id -> Optional
+                                            .ofNullable(albums.get(id)))
+                                    .orElse(null));
                         });
 
                 historyRepository.batchSave(historyItems);

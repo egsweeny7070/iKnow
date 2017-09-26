@@ -82,7 +82,7 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                 );
 
             } catch (NotFoundException e) {
-                log.error(e);
+                log.warn(e);
 
                 IOUtils.copy(
                         new ByteArrayInputStream(
@@ -100,7 +100,7 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                 );
 
             } catch (UnauthorizedException e) {
-                log.error(e);
+                log.warn(e);
 
                 IOUtils.copy(
                         new ByteArrayInputStream(
@@ -117,9 +117,29 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                         output
                 );
 
+            } catch (BadRequestException e) {
+                log.warn(e);
+
+                IOUtils.copy(
+                        new ByteArrayInputStream(
+                                gson.toJson(
+                                        new LambdaResponse(
+                                                false,
+                                                400,
+                                                null,
+                                                null
+                                        )
+                                ).getBytes(StringUtils
+                                        .UTF8)
+                        ),
+                        output
+                );
+
             }
 
         } catch (Throwable e) {
+            log.error(e);
+
             throw new RuntimeException(e);
         }
     }
