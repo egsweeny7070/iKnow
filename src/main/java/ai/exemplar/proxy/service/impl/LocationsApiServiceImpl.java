@@ -49,6 +49,30 @@ public class LocationsApiServiceImpl implements LocationsApiService {
             try {
                 LambdaRequest request = gson.fromJson(new InputStreamReader(input), LambdaRequest.class);
 
+                if (request.getHttpMethod().equals("OPTIONS")) {
+                    IOUtils.copy(
+                            new ByteArrayInputStream(
+                                    gson.toJson(
+                                            new LambdaResponse(
+                                                    false,
+                                                    200,
+                                                    ImmutableMap.<String, String>builder()
+                                                            .put("Content-Type", "application/json")
+                                                            .put("Access-Control-Allow-Methods", "GET, OPTIONS")
+                                                            .put("Access-Control-Allow-Origin", "*")
+                                                            .put("Access-Control-Allow-Headers", "Authorization, Accept, Origin")
+                                                            .build(),
+                                                    null
+                                            )
+                                    ).getBytes(StringUtils
+                                            .UTF8)
+                            ),
+                            output
+                    );
+
+                    return;
+                }
+
                 if (!request.getHttpMethod().equals("GET")) {
                     throw new NotFoundException();
                 }
@@ -57,7 +81,8 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                         new ByteArrayInputStream(
                                 gson.toJson(
                                         new LambdaResponse(
-                                                false, 200,
+                                                false,
+                                                200,
                                                 ImmutableMap.<String, String>builder()
                                                         .put("Content-Type", "application/json")
                                                         .put("Access-Control-Allow-Origin", "*")
