@@ -12,6 +12,7 @@ import ai.exemplar.utils.lambda.LambdaRequest;
 import ai.exemplar.utils.lambda.LambdaResponse;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 
@@ -57,10 +58,10 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                                 gson.toJson(
                                         new LambdaResponse(
                                                 false, 200,
-                                                Collections.singletonMap(
-                                                        "Content-Type",
-                                                        "application/json"
-                                                ),
+                                                ImmutableMap.<String, String>builder()
+                                                        .put("Content-Type", "application/json")
+                                                        .put("Access-Control-Allow-Origin", "*")
+                                                        .build(),
                                                 gson.toJson(locationsService
                                                         .locations(Optional.ofNullable(
                                                                 oAuthTokenRepository.get(Optional.ofNullable(
@@ -90,7 +91,7 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                                         new LambdaResponse(
                                                 false,
                                                 404,
-                                                null,
+                                                Collections.singletonMap("Access-Control-Allow-Origin", "*"),
                                                 null
                                         )
                                 ).getBytes(StringUtils
@@ -108,7 +109,7 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                                         new LambdaResponse(
                                                 false,
                                                 403,
-                                                null,
+                                                Collections.singletonMap("Access-Control-Allow-Origin", "*"),
                                                 null
                                         )
                                 ).getBytes(StringUtils
@@ -126,7 +127,7 @@ public class LocationsApiServiceImpl implements LocationsApiService {
                                         new LambdaResponse(
                                                 false,
                                                 400,
-                                                null,
+                                                Collections.singletonMap("Access-Control-Allow-Origin", "*"),
                                                 null
                                         )
                                 ).getBytes(StringUtils

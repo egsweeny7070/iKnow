@@ -66,6 +66,8 @@ public class SquareDataFetcher implements DataFetcher {
                 beginTime,
                 LocalDateTime.now()
         ).stream()
+                .filter(payment -> payment.getCreated()
+                        .isAfter(beginTime))
                 .map(payment -> new SquarePayment(
                         location.getId(),
                         payment.getId(),
