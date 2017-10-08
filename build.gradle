@@ -27,6 +27,9 @@ dependencies {
     compile 'com.auth0:java-jwt:3.2.0'
     compile 'com.auth0:auth0:1.3.0'
 
+    // replacing the dependency for AWS with the matching version
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.8.5'
+
     testCompile 'junit:junit:4.12'
 }
 

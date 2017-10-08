@@ -12,6 +12,7 @@ import ai.exemplar.persistence.SquarePaymentsRepository;
 import ai.exemplar.persistence.dynamodb.schema.square.*;
 import ai.exemplar.persistence.model.OAuthToken;
 import ai.exemplar.persistence.model.SquarePayment;
+import ai.exemplar.streams.StreamsAppender;
 import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
@@ -35,12 +36,15 @@ public class SquareDataFetcher implements DataFetcher {
 
     private final SquarePaymentsRepository historyRepository;
 
+    private final StreamsAppender streamsAppender;
+
     @Inject
-    public SquareDataFetcher(OAuthTokenRepository tokensRepository, SquareApiProvider api, LocationsService locationsService, SquarePaymentsRepository historyRepository) {
+    public SquareDataFetcher(OAuthTokenRepository tokensRepository, SquareApiProvider api, LocationsService locationsService, SquarePaymentsRepository historyRepository, StreamsAppender streamsAppender) {
         this.tokensRepository = tokensRepository;
         this.api = api;
         this.locationsService = locationsService;
         this.historyRepository = historyRepository;
+        this.streamsAppender = streamsAppender;
     }
 
     @Override
@@ -66,8 +70,6 @@ public class SquareDataFetcher implements DataFetcher {
                 beginTime,
                 LocalDateTime.now()
         ).stream()
-                .filter(payment -> payment.getCreated()
-                        .isAfter(beginTime))
                 .map(payment -> new SquarePayment(
                         location.getId(),
                         payment.getId(),
@@ -161,6 +163,10 @@ public class SquareDataFetcher implements DataFetcher {
                                 .save(location);
                     });
 
+            payments.stream()
+                    .filter(payment -> payment.getTimestamp()
+                            .isAfter(beginTime))
+                    .forEach(streamsAppender::appendPayment);
         }
     }
 }

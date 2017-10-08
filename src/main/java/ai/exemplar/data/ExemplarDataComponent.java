@@ -5,8 +5,10 @@ import ai.exemplar.common.CommonServicesModule;
 import ai.exemplar.data.fetchers.DataFetchersModule;
 import ai.exemplar.data.service.DataServiceModule;
 import ai.exemplar.data.service.ScheduledJobsService;
+import ai.exemplar.dependencies.AmazonKinesisModule;
 import ai.exemplar.dependencies.DynamoDBModule;
 import ai.exemplar.persistence.DynamoDBPersistenceModule;
+import ai.exemplar.streams.StreamsModule;
 import dagger.Component;
 
 import javax.inject.Singleton;
@@ -17,6 +19,8 @@ import javax.inject.Singleton;
         DynamoDBPersistenceModule.class,
         ApiProvidersModule.class,
         CommonServicesModule.class,
+        AmazonKinesisModule.class,
+        StreamsModule.class,
         DataFetchersModule.class,
         DataServiceModule.class
 })

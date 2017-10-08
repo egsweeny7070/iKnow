@@ -10,6 +10,7 @@ import ai.exemplar.persistence.OAuthTokenRepository;
 import ai.exemplar.persistence.SpotifyHistoryRepository;
 import ai.exemplar.persistence.dynamodb.schema.spotify.*;
 import ai.exemplar.persistence.model.OAuthToken;
+import ai.exemplar.streams.StreamsAppender;
 import com.google.common.collect.Lists;
 import org.apache.log4j.Logger;
 
@@ -31,11 +32,14 @@ public class SpotifyDataFetcher implements DataFetcher {
 
     private final SpotifyHistoryRepository historyRepository;
 
+    private final StreamsAppender streamsAppender;
+
     @Inject
-    public SpotifyDataFetcher(OAuthTokenRepository tokensRepository, SpotifyApiProvider api, SpotifyHistoryRepository historyRepository) {
+    public SpotifyDataFetcher(OAuthTokenRepository tokensRepository, SpotifyApiProvider api, SpotifyHistoryRepository historyRepository, StreamsAppender streamsAppender) {
         this.tokensRepository = tokensRepository;
         this.api = api;
         this.historyRepository = historyRepository;
+        this.streamsAppender = streamsAppender;
     }
 
     @Override
@@ -225,6 +229,9 @@ public class SpotifyDataFetcher implements DataFetcher {
                                         token.getInternalId()
                                 ))
                         );
+
+                historyItems.stream()
+                        .forEach(streamsAppender::appendTrack);
             }
 
         } catch (Throwable e) {

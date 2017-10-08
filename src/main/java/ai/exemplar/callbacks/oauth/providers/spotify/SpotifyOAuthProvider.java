@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class SpotifyOAuthProvider implements OAuthProvider {
@@ -60,6 +61,12 @@ public class SpotifyOAuthProvider implements OAuthProvider {
 
                 String location = state[0];
                 String account = state[1];
+
+                if (location.isEmpty()) {
+                    log.warn("location id is empty for state=" + queryParameters.get("state"));
+
+                    return Boolean.FALSE.toString();
+                }
 
                 log.debug(String.format("received nonce for user=%s, location=%s", account, location));
 
@@ -122,11 +129,14 @@ public class SpotifyOAuthProvider implements OAuthProvider {
                         null
                 ));
 
+                Map<String, String> providers = new HashMap<>(locationSchema
+                        .getPlayHistoryProviders());
+
+                providers.put(PROVIDER_NAME, location);
+
                 locationSchema.setPlayHistoryProviders(
                         ImmutableMap.<String, String>builder()
-                                .putAll(locationSchema
-                                        .getPlayHistoryProviders())
-                                .put(PROVIDER_NAME, location)
+                                .putAll(providers)
                                 .build()
                 );
 
