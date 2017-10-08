@@ -60,7 +60,9 @@ public class SquareDataFetcher implements DataFetcher {
     }
 
     private void fetchPayments(LocationSchema location, OAuthToken token) {
-        LocalDateTime beginTime = Optional.ofNullable(location.getLastFetched())
+        LocalDateTime lastFetched = location.getLastFetched();
+
+        LocalDateTime beginTime = Optional.ofNullable(lastFetched)
                 .orElse(LocalDateTime.now()
                         .minus(1L, ChronoUnit.DAYS));
 
@@ -163,10 +165,14 @@ public class SquareDataFetcher implements DataFetcher {
                                 .save(location);
                     });
 
-            payments.stream()
-                    .filter(payment -> payment.getTimestamp()
-                            .isAfter(beginTime))
-                    .forEach(streamsAppender::appendPayment);
+            Optional.ofNullable(lastFetched)
+                    .ifPresent(lastFetchedTimestamp ->
+                            payments.stream()
+                                    .filter(payment -> payment.getTimestamp()
+                                            .isAfter(lastFetchedTimestamp))
+                                    .forEach(streamsAppender
+                                            ::appendPayment)
+                    );
         }
     }
 }

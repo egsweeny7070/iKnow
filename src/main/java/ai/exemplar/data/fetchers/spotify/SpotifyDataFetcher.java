@@ -45,10 +45,13 @@ public class SpotifyDataFetcher implements DataFetcher {
     @Override
     public void fetchData(OAuthToken token) {
         try {
+            LocalDateTime lastFetched = token.getLastFetched();
+
             List<PlayHistoryObject> recentlyPlayed = api.getRecentlyPlayed(
                     token.getToken(),
-                    Optional.ofNullable(token.getLastFetched())
-                            .orElse(LocalDateTime.now().minus(1L, ChronoUnit.DAYS))
+                    Optional.ofNullable(lastFetched)
+                            .orElse(LocalDateTime.now()
+                                    .minus(1L, ChronoUnit.DAYS))
             );
 
             log.info(String.format("fetched %d spotify history entries for key %s", recentlyPlayed.size(), token.getId()));
@@ -230,8 +233,12 @@ public class SpotifyDataFetcher implements DataFetcher {
                                 ))
                         );
 
-                historyItems.stream()
-                        .forEach(streamsAppender::appendTrack);
+                Optional.ofNullable(lastFetched)
+                        .ifPresent(lastFetchedTimestamp ->
+                                historyItems.stream()
+                                        .forEach(streamsAppender
+                                                ::appendTrack)
+                        );
             }
 
         } catch (Throwable e) {
