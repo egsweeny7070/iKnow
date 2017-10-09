@@ -3,6 +3,7 @@ package ai.exemplar.streams.kinesis;
 import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
 import ai.exemplar.persistence.model.SquarePayment;
 import ai.exemplar.streams.StreamsAppender;
+import ai.exemplar.streams.values.StreamEvent;
 import ai.exemplar.utils.json.GsonFabric;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.kinesis.AmazonKinesis;
@@ -18,20 +19,17 @@ public class KinesisStreamsAppender implements StreamsAppender {
 
     static final Logger log = Logger.getLogger(KinesisStreamsAppender.class);
 
-    private static final String PAYMENTS_STREAM = "Exemplar_Payments";
-
-    private static final String TRACKS_STREAM = "Exemplar_PlayHistory";
+    private static final String STREAM = "Exemplar_Events";
 
     private final AmazonKinesis kinesis;
 
-    private final Gson gson = GsonFabric.gson();
+    private final Gson gson = GsonFabric.simplified();
 
     @Inject
     public KinesisStreamsAppender(AmazonKinesis kinesis) {
         this.kinesis = kinesis;
 
-        createIfNotExists(PAYMENTS_STREAM);
-        createIfNotExists(TRACKS_STREAM);
+        createIfNotExists(STREAM);
     }
 
     private void createIfNotExists(String streamName) {
@@ -58,15 +56,15 @@ public class KinesisStreamsAppender implements StreamsAppender {
         }
     }
 
-    private void write(String streamName, String key, Object payload) {
+    private void write(StreamEvent event) {
         PutRecordRequest putRecord = new PutRecordRequest();
 
-        putRecord.setStreamName(streamName);
-        putRecord.setPartitionKey(key);
+        putRecord.setStreamName(STREAM);
+        putRecord.setPartitionKey(event.getKey());
 
-        String jsonBody = gson.toJson(payload);
+        String jsonBody = gson.toJson(event);
 
-        log.debug(String.format("publishing entry with key %s to stream %s", key, streamName));
+        log.debug(String.format("publishing entry with key %s to stream %s", event.getKey(), STREAM));
 
         try {
             putRecord.setData(ByteBuffer
@@ -75,10 +73,10 @@ public class KinesisStreamsAppender implements StreamsAppender {
             kinesis.putRecord(putRecord);
 
         } catch (AmazonClientException e) {
-            log.error(String.format("publishing key %s to stream %s exception", key, streamName), e);
+            log.error(String.format("publishing key %s to stream %s exception", event.getKey(), STREAM), e);
 
         } catch (Exception e) {
-            log.error(String.format("publishing key %s to stream %s runtime exception", key, streamName), e);
+            log.error(String.format("publishing key %s to stream %s runtime exception", event.getKey(), STREAM), e);
 
             throw new RuntimeException(e);
         }
@@ -86,19 +84,11 @@ public class KinesisStreamsAppender implements StreamsAppender {
 
     @Override
     public void appendPayment(SquarePayment payment) {
-        write(
-                PAYMENTS_STREAM,
-                payment.getLocation(),
-                payment
-        );
+        write(new StreamEvent(payment));
     }
 
     @Override
     public void appendTrack(PlayHistoryItemSchema track) {
-        write(
-                TRACKS_STREAM,
-                track.getKey(),
-                track
-        );
+        write(new StreamEvent(track));
     }
 }
