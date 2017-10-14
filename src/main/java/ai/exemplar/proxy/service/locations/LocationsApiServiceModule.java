@@ -1,13 +1,13 @@
-package ai.exemplar.proxy.service;
+package ai.exemplar.proxy.service.locations;
 
-import ai.exemplar.proxy.service.impl.LocationsApiServiceImpl;
+import ai.exemplar.proxy.service.locations.impl.LocationsApiServiceImpl;
 import dagger.Module;
 import dagger.Provides;
 
 import javax.inject.Singleton;
 
 @Module
-public class ApiServiceModule {
+public class LocationsApiServiceModule {
 
     @Provides
     @Singleton

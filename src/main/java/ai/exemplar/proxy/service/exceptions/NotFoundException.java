@@ -1,4 +1,4 @@
 package ai.exemplar.proxy.service.exceptions;
 
-public class NotFoundException extends Exception {
+public class NotFoundException extends RuntimeException {
 }

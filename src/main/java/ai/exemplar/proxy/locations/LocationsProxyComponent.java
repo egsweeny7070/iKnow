@@ -5,8 +5,8 @@ import ai.exemplar.authorization.AuthorizationModule;
 import ai.exemplar.common.CommonServicesModule;
 import ai.exemplar.dependencies.DynamoDBModule;
 import ai.exemplar.persistence.DynamoDBPersistenceModule;
-import ai.exemplar.proxy.service.ApiServiceModule;
-import ai.exemplar.proxy.service.LocationsApiService;
+import ai.exemplar.proxy.service.locations.LocationsApiServiceModule;
+import ai.exemplar.proxy.service.locations.LocationsApiService;
 import dagger.Component;
 
 import javax.inject.Singleton;
@@ -18,7 +18,7 @@ import javax.inject.Singleton;
         ApiProvidersModule.class,
         CommonServicesModule.class,
         AuthorizationModule.class,
-        ApiServiceModule.class
+        LocationsApiServiceModule.class
 })
 public interface LocationsProxyComponent {
 

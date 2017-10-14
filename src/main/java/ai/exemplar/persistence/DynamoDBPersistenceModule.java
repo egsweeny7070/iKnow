@@ -1,11 +1,8 @@
 package ai.exemplar.persistence;
 
-import ai.exemplar.persistence.dynamodb.DynamoDBSpotifyHistoryRepository;
-import ai.exemplar.persistence.dynamodb.DynamoDBSquareLocationsRepository;
-import ai.exemplar.persistence.dynamodb.DynamoDBSquarePaymentsRepository;
+import ai.exemplar.persistence.dynamodb.*;
 import dagger.Module;
 import dagger.Provides;
-import ai.exemplar.persistence.dynamodb.DynamoDBOAuthTokenRepository;
 
 import javax.inject.Singleton;
 
@@ -42,5 +39,21 @@ public class DynamoDBPersistenceModule {
             DynamoDBSquarePaymentsRepository squarePaymentsRepository
     ) {
         return squarePaymentsRepository;
+    }
+
+    @Provides
+    @Singleton
+    public static PaymentsAnalyticsRepository providePaymentsAnalyticsRepository(
+            DynamoDBPaymentsAnalyticsRepository paymentsAnalyticsRepository
+    ) {
+        return paymentsAnalyticsRepository;
+    }
+
+    @Provides
+    @Singleton
+    public static TracksAnalyticsRepository provideTracksAnalyticsRepository(
+            DynamoDBTracksAnalyticsRepository tracksAnalyticsRepository
+    ) {
+        return tracksAnalyticsRepository;
     }
 }

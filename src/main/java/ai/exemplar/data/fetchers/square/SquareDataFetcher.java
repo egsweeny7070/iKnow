@@ -170,6 +170,8 @@ public class SquareDataFetcher implements DataFetcher {
                             payments.stream()
                                     .filter(payment -> payment.getTimestamp()
                                             .isAfter(lastFetchedTimestamp))
+                                    .sorted(Comparator
+                                            .comparing(SquarePayment::getTimestamp))
                                     .forEach(streamsAppender
                                             ::appendPayment)
                     );

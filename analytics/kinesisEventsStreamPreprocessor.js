@@ -4,12 +4,19 @@ console.log('Loading transformation function');
 
 function processEvent(event) {
     if (event.type === 'TRACK') {
-        return [
-            {
-                type: event.type,
-                key: event.key,
-                timestamp: event.track.timestamp,
-                name: event.track.track.name,
+        let track = {
+            type: event.type,
+            key: event.key,
+            timestamp: event.track.timestamp,
+            name: event.track.track.name,
+            disc_number: event.track.track.discNumber,
+            track_number: event.track.track.trackNumber,
+            track_popularity: event.track.track.popularity,
+            duration: event.track.track.duration,
+        };
+
+        if (event.track.track.album) {
+            track = Object.assign(track, {
                 artist: event.track.track.album.artists[0].name,
                 label: event.track.track.album.label,
                 album_name: event.track.track.album.name,
@@ -17,10 +24,11 @@ function processEvent(event) {
                 album_popularity: event.track.track.album.popularity,
                 release_date: event.track.track.album.releaseDate,
                 release_date_precision: event.track.track.album.releaseDatePrecision,
-                disc_number: event.track.track.discNumber,
-                track_number: event.track.track.trackNumber,
-                track_popularity: event.track.track.popularity,
-                duration: event.track.track.duration,
+            });
+        }
+
+        if (event.track.track.features) {
+            track = Object.assign(track, {
                 mode: event.track.track.features.mode,
                 tonality: event.track.track.features.key,
                 time_signature: event.track.track.features.timeSignature,
@@ -33,16 +41,61 @@ function processEvent(event) {
                 loudness: event.track.track.features.loudness,
                 speechiness: event.track.track.features.speechiness,
                 valence: event.track.track.features.valence,
-            }
+            });
+
+        } else {
+            return [];  // don't want to count tracks without features in analytics
+        }
+
+        return [
+            track
         ];
 
     } else if (event.type === 'PAYMENT') {
+        let itemsCount = 0;
+        let items;
+
+        if (event.payment.items) {
+            items = event.payment.items.map(
+                (item) => {
+                    let itemEvent = {
+                        type: 'ITEM',
+                        key: event.key,
+                        timestamp: event.payment.timestamp,
+                        device: event.payment.device,
+                        name: item.name,
+                        quantity: item.quantity,
+                        category: item.category,
+                        variation: item.variation,
+                        sku: item.sku,
+                        total: item.total,
+                        single_quantity: item.singleQuantity,
+                        gross_sales: item.grossSales,
+                        net_sales: item.netSales,
+                    };
+
+                    if (item.modifiers.length > 0) {
+                        return Object.assign(itemEvent, {
+                            modifier_type: item.modifiers[0].type,
+                            modifier_name: item.modifiers[0].name,
+                        });
+
+                    } else {
+                        return itemEvent;
+                    }
+                }
+            );
+
+            itemsCount = items.length;
+        }
+
         let paymentEvent = [
             {
                 type: event.type,
                 key: event.key,
                 timestamp: event.payment.timestamp,
                 device: event.payment.device,
+                items_count: itemsCount,
                 collected: event.payment.collected,
                 refunded: event.payment.refunded,
                 discount: event.payment.discount,
@@ -58,35 +111,7 @@ function processEvent(event) {
 
         if (event.payment.items) {
             return paymentEvent.concat(
-                event.payment.items.map(
-                    (item) => {
-                        let itemEvent = {
-                            type: 'ITEM',
-                            key: event.key,
-                            timestamp: event.payment.timestamp,
-                            device: event.payment.device,
-                            name: item.name,
-                            quantity: item.quantity,
-                            category: item.category,
-                            variation: item.variation,
-                            sku: item.sku,
-                            total: item.total,
-                            single_quantity: item.singleQuantity,
-                            gross_sales: item.grossSales,
-                            net_sales: item.netSales,
-                        };
-
-                        if (item.modifiers.length > 0) {
-                            return Object.assign(itemEvent, {
-                                modifier_type: item.modifiers[0].type,
-                                modifier_name: item.modifiers[0].name,
-                            });
-
-                        } else {
-                            return itemEvent;
-                        }
-                    }
-                )
+                items
             );
 
         } else {

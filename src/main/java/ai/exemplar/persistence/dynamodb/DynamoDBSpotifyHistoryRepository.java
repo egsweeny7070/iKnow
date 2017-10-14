@@ -56,9 +56,11 @@ public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepositor
         if (!failed.isEmpty()) {
             failed.stream()
                     .map(DynamoDBMapper.FailedBatch::getException)
-                    .forEach(e -> log.error("spotify history item save exception: ", e));
+                    .forEach(log::error);
 
-            throw new RuntimeException("batch save left unprocessed items");
+            throw new RuntimeException(failed.stream()
+                    .map(DynamoDBMapper.FailedBatch::getException)
+                    .findAny().get());
         }
     }
 }

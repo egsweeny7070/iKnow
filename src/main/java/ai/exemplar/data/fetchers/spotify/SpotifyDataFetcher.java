@@ -236,6 +236,10 @@ public class SpotifyDataFetcher implements DataFetcher {
                 Optional.ofNullable(lastFetched)
                         .ifPresent(lastFetchedTimestamp ->
                                 historyItems.stream()
+                                        .filter(playHistoryItem -> playHistoryItem.getTimestamp()
+                                                .isAfter(lastFetchedTimestamp))
+                                        .sorted(Comparator
+                                                .comparing(PlayHistoryItemSchema::getTimestamp))
                                         .forEach(streamsAppender
                                                 ::appendTrack)
                         );

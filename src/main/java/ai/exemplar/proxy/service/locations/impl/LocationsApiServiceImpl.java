@@ -1,9 +1,9 @@
-package ai.exemplar.proxy.service.impl;
+package ai.exemplar.proxy.service.locations.impl;
 
 import ai.exemplar.authorization.AuthorizationService;
 import ai.exemplar.common.LocationsService;
 import ai.exemplar.persistence.OAuthTokenRepository;
-import ai.exemplar.proxy.service.LocationsApiService;
+import ai.exemplar.proxy.service.locations.LocationsApiService;
 import ai.exemplar.proxy.service.exceptions.BadRequestException;
 import ai.exemplar.proxy.service.exceptions.NotFoundException;
 import ai.exemplar.proxy.service.exceptions.UnauthorizedException;
