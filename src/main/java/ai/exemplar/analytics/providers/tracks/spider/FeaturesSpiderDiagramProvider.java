@@ -6,7 +6,7 @@ import ai.exemplar.analytics.providers.tracks.spider.values.FeaturesDiagramItem;
 import ai.exemplar.analytics.providers.tracks.spider.values.FeaturesSpiderDiagram;
 import ai.exemplar.persistence.TracksAnalyticsRepository;
 import ai.exemplar.persistence.dynamodb.schema.analytics.TrackFeatureAnalyticsDocumentSchema;
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.TracksAnalyticsItemSchema;
 import ai.exemplar.proxy.service.exceptions.BadRequestException;
 import org.apache.log4j.Logger;
 
@@ -32,7 +32,9 @@ public class FeaturesSpiderDiagramProvider implements AnalyticsProvider {
      * Query parameter names
      */
 
-    public static final String QUERY_DATE = "date";
+    public static final String QUERY_START_DATE = "from";
+
+    public static final String QUERY_END_DATE = "to";
 
     public static final String QUERY_BREAK_TIME = "break";
 
@@ -51,8 +53,13 @@ public class FeaturesSpiderDiagramProvider implements AnalyticsProvider {
 
     @Override
     public Object get(String location, Map<String, String> query) {
-        LocalDate date = Optional.ofNullable(query
-                .get(QUERY_DATE))
+        LocalDate from = Optional.ofNullable(query
+                .get(QUERY_START_DATE))
+                .map(LocalDate::parse)
+                .orElseThrow(BadRequestException::new);
+
+        LocalDate to = Optional.ofNullable(query
+                .get(QUERY_END_DATE))
                 .map(LocalDate::parse)
                 .orElseThrow(BadRequestException::new);
 
@@ -67,120 +74,127 @@ public class FeaturesSpiderDiagramProvider implements AnalyticsProvider {
                 .orElseThrow(BadRequestException::new);
 
         LocalDateTime startTimestamp = ZonedDateTime
-                .of(date, LocalTime.MIDNIGHT, offset)
-                .withZoneSameInstant(ZoneId.systemDefault())
-                .toLocalDateTime();
-
-        LocalDateTime breakTimestamp = ZonedDateTime
-                .of(date, breakTime, offset)
+                .of(from, LocalTime.MIDNIGHT, offset)
                 .withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime();
 
         LocalDateTime endTimestamp = ZonedDateTime
-                .of(date, LocalTime.MIDNIGHT, offset)
+                .of(to, LocalTime.MIDNIGHT, offset)
                 .plus(1, ChronoUnit.DAYS)
                 .withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime();
 
+        List<TracksAnalyticsItemSchema> data = load(location, startTimestamp, endTimestamp);
+
         return new FeaturesSpiderDiagram(
-                prepareDiagram(location, startTimestamp, breakTimestamp),
-                prepareDiagram(location, breakTimestamp, endTimestamp)
+                prepareDiagram(data),
+                prepareDiagram(data.stream()
+                        .filter(item -> item.getRowTime()
+                                .atZone(ZoneId.systemDefault())
+                                .withZoneSameInstant(offset).toLocalTime()
+                                .isBefore(breakTime))
+                        .collect(Collectors.toList())),
+                prepareDiagram(data.stream()
+                        .filter(item -> item.getRowTime()
+                                .atZone(ZoneId.systemDefault())
+                                .withZoneSameInstant(offset).toLocalTime()
+                                .isAfter(breakTime))
+                        .collect(Collectors.toList()))
         );
     }
 
-    private FeaturesDiagram prepareDiagram(String location, LocalDateTime startTimestamp, LocalDateTime endTimestamp) {
-        List<TracksAnalyticsItem> data = repository.query(location, startTimestamp, endTimestamp).stream()
+    private List<TracksAnalyticsItemSchema> load(String location, LocalDateTime startTimestamp, LocalDateTime endTimestamp) {
+        return repository.query(location, startTimestamp, endTimestamp).stream()
                 .collect(Collectors
-                        .groupingBy(TracksAnalyticsItem::getTimestamp))
+                        .groupingBy(TracksAnalyticsItemSchema::getRowTime))
                 .entrySet().stream()
-                .map(entry -> new TracksAnalyticsItem(
+                .map(entry -> new TracksAnalyticsItemSchema(
                         null,
-                        null,
-                        null,
+                        entry.getKey(),
                         entry.getValue().stream()
-                                .mapToInt(TracksAnalyticsItem::getTracksCount).sum(),
+                                .mapToInt(TracksAnalyticsItemSchema::getTracksCount).sum(),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getAcousticness)
+                                        .map(TracksAnalyticsItemSchema::getAcousticness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getAcousticness)
+                                        .map(TracksAnalyticsItemSchema::getAcousticness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getAcousticness)
+                                        .map(TracksAnalyticsItemSchema::getAcousticness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDanceability)
+                                        .map(TracksAnalyticsItemSchema::getDanceability)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDanceability)
+                                        .map(TracksAnalyticsItemSchema::getDanceability)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDanceability)
+                                        .map(TracksAnalyticsItemSchema::getDanceability)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getEnergy)
+                                        .map(TracksAnalyticsItemSchema::getEnergy)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getEnergy)
+                                        .map(TracksAnalyticsItemSchema::getEnergy)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getEnergy)
+                                        .map(TracksAnalyticsItemSchema::getEnergy)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getInstrumentalness)
+                                        .map(TracksAnalyticsItemSchema::getInstrumentalness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getInstrumentalness)
+                                        .map(TracksAnalyticsItemSchema::getInstrumentalness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getInstrumentalness)
+                                        .map(TracksAnalyticsItemSchema::getInstrumentalness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLiveness)
+                                        .map(TracksAnalyticsItemSchema::getLiveness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLiveness)
+                                        .map(TracksAnalyticsItemSchema::getLiveness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLiveness)
+                                        .map(TracksAnalyticsItemSchema::getLiveness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         null,
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getSpeechiness)
+                                        .map(TracksAnalyticsItemSchema::getSpeechiness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getSpeechiness)
+                                        .map(TracksAnalyticsItemSchema::getSpeechiness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getSpeechiness)
+                                        .map(TracksAnalyticsItemSchema::getSpeechiness)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getValence)
+                                        .map(TracksAnalyticsItemSchema::getValence)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getValence)
+                                        .map(TracksAnalyticsItemSchema::getValence)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getValence)
+                                        .map(TracksAnalyticsItemSchema::getValence)
                                         .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
                                 null
                         ),
@@ -188,7 +202,9 @@ public class FeaturesSpiderDiagramProvider implements AnalyticsProvider {
                         null
                 ))
                 .collect(Collectors.toList());
+    }
 
+    private FeaturesDiagram prepareDiagram(List<TracksAnalyticsItemSchema> data) {
         if (data.isEmpty()) {
             return new FeaturesDiagram(
                     new FeaturesDiagramItem(0.0, 0.0, 0.0),
@@ -203,88 +219,88 @@ public class FeaturesSpiderDiagramProvider implements AnalyticsProvider {
 
         return new FeaturesDiagram(
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getAcousticness)
+                        data.stream().map(TracksAnalyticsItemSchema::getAcousticness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getAcousticness)
+                        data.stream().map(TracksAnalyticsItemSchema::getAcousticness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getAcousticness)
+                        data.stream().map(TracksAnalyticsItemSchema::getAcousticness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getDanceability)
+                        data.stream().map(TracksAnalyticsItemSchema::getDanceability)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getDanceability)
+                        data.stream().map(TracksAnalyticsItemSchema::getDanceability)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getDanceability)
+                        data.stream().map(TracksAnalyticsItemSchema::getDanceability)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getEnergy)
+                        data.stream().map(TracksAnalyticsItemSchema::getEnergy)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getEnergy)
+                        data.stream().map(TracksAnalyticsItemSchema::getEnergy)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getEnergy)
+                        data.stream().map(TracksAnalyticsItemSchema::getEnergy)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getInstrumentalness)
+                        data.stream().map(TracksAnalyticsItemSchema::getInstrumentalness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getInstrumentalness)
+                        data.stream().map(TracksAnalyticsItemSchema::getInstrumentalness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getInstrumentalness)
+                        data.stream().map(TracksAnalyticsItemSchema::getInstrumentalness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getLiveness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLiveness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getLiveness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLiveness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getLiveness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLiveness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getSpeechiness)
+                        data.stream().map(TracksAnalyticsItemSchema::getSpeechiness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getSpeechiness)
+                        data.stream().map(TracksAnalyticsItemSchema::getSpeechiness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getSpeechiness)
+                        data.stream().map(TracksAnalyticsItemSchema::getSpeechiness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesDiagramItem(
-                        data.stream().map(TracksAnalyticsItem::getValence)
+                        data.stream().map(TracksAnalyticsItemSchema::getValence)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getValence)
+                        data.stream().map(TracksAnalyticsItemSchema::getValence)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getValence)
+                        data.stream().map(TracksAnalyticsItemSchema::getValence)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 )
         );
     }

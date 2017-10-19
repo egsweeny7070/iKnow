@@ -5,7 +5,7 @@ import ai.exemplar.analytics.providers.tracks.histogram.values.FeaturesHistogram
 import ai.exemplar.analytics.providers.tracks.histogram.values.MainFeatures;
 import ai.exemplar.persistence.TracksAnalyticsRepository;
 import ai.exemplar.persistence.dynamodb.schema.analytics.TrackFeatureAnalyticsDocumentSchema;
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.TracksAnalyticsItemSchema;
 import ai.exemplar.proxy.service.exceptions.BadRequestException;
 import org.apache.log4j.Logger;
 
@@ -14,6 +14,7 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,9 @@ public class MainFeaturesBaselineHistogramProvider implements AnalyticsProvider 
      * Query parameter names
      */
 
-    public static final String QUERY_DATE = "date";
+    public static final String QUERY_START_DATE = "from";
+
+    public static final String QUERY_END_DATE = "to";
 
     public static final String TIMEZONE_OFFSET = "offset";
 
@@ -48,8 +51,13 @@ public class MainFeaturesBaselineHistogramProvider implements AnalyticsProvider 
 
     @Override
     public Object get(String location, Map<String, String> query) {
-        LocalDate date = Optional.ofNullable(query
-                .get(QUERY_DATE))
+        LocalDate from = Optional.ofNullable(query
+                .get(QUERY_START_DATE))
+                .map(LocalDate::parse)
+                .orElseThrow(BadRequestException::new);
+
+        LocalDate to = Optional.ofNullable(query
+                .get(QUERY_END_DATE))
                 .map(LocalDate::parse)
                 .orElseThrow(BadRequestException::new);
 
@@ -59,27 +67,26 @@ public class MainFeaturesBaselineHistogramProvider implements AnalyticsProvider 
                 .orElseThrow(BadRequestException::new);
 
         LocalDateTime startTimestamp = ZonedDateTime
-                .of(date, LocalTime.MIDNIGHT, offset)
+                .of(from, LocalTime.MIDNIGHT, offset)
                 .withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime();
 
         LocalDateTime endTimestamp = ZonedDateTime
-                .of(date, LocalTime.MIDNIGHT, offset)
+                .of(to, LocalTime.MIDNIGHT, offset)
                 .plus(1, ChronoUnit.DAYS)
                 .withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime();
 
-        List<TracksAnalyticsItem> data = repository.query(location, startTimestamp, endTimestamp).stream()
+        List<TracksAnalyticsItemSchema> data = repository.query(location, startTimestamp, endTimestamp).stream()
                 .collect(Collectors
-                        .groupingBy(TracksAnalyticsItem::getTimestamp))
+                        .groupingBy(TracksAnalyticsItemSchema::getRowTime))
                 .entrySet().stream()
-                .map(entry -> new TracksAnalyticsItem(
+                .map(entry -> new TracksAnalyticsItemSchema(
                         location,
                         entry.getKey().atZone(ZoneId.systemDefault())
                                 .withZoneSameInstant(offset).toLocalDateTime(),
-                        null,
                         entry.getValue().stream()
-                                .mapToInt(TracksAnalyticsItem::getTracksCount).sum(),
+                                .mapToInt(TracksAnalyticsItemSchema::getTracksCount).sum(),
                         null,
                         null,
                         null,
@@ -87,40 +94,58 @@ public class MainFeaturesBaselineHistogramProvider implements AnalyticsProvider 
                         null,
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLoudness)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getLoudness).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMin).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .min().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLoudness)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getLoudness).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMax).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .max().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getLoudness)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
+                                        .map(TracksAnalyticsItemSchema::getLoudness).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getSum).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .sum(),
                                 null
                         ),
                         null,
                         null,
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDuration)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getDuration).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMin).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .min().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDuration)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getDuration).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMax).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .max().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getDuration)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
+                                        .map(TracksAnalyticsItemSchema::getDuration).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getSum).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .sum(),
                                 null
                         ),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getTempo)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin).min().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getTempo).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMin).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .min().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getTempo)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax).max().getAsDouble(),
+                                        .map(TracksAnalyticsItemSchema::getTempo).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getMax).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .max().orElse(0),
                                 entry.getValue().stream()
-                                        .map(TracksAnalyticsItem::getTempo)
-                                        .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum).sum(),
+                                        .map(TracksAnalyticsItemSchema::getTempo).filter(Objects::nonNull)
+                                        .map(TrackFeatureAnalyticsDocumentSchema::getSum).filter(Objects::nonNull)
+                                        .mapToDouble(v -> v)
+                                        .sum(),
                                 null
                         )
                 ))
@@ -136,40 +161,40 @@ public class MainFeaturesBaselineHistogramProvider implements AnalyticsProvider 
 
         return new MainFeatures(
                 new FeaturesHistogramItem(
-                        data.stream().map(TracksAnalyticsItem::getLoudness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLoudness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getLoudness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLoudness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getLoudness)
+                        data.stream().map(TracksAnalyticsItemSchema::getLoudness)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                        / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                        / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesHistogramItem(
-                        data.stream().map(TracksAnalyticsItem::getDuration)
+                        data.stream().map(TracksAnalyticsItemSchema::getDuration)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getDuration)
+                        data.stream().map(TracksAnalyticsItemSchema::getDuration)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getDuration)
+                        data.stream().map(TracksAnalyticsItemSchema::getDuration)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 ),
                 new FeaturesHistogramItem(
-                        data.stream().map(TracksAnalyticsItem::getTempo)
+                        data.stream().map(TracksAnalyticsItemSchema::getTempo)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMin)
                                 .min().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getTempo)
+                        data.stream().map(TracksAnalyticsItemSchema::getTempo)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getMax)
                                 .max().orElse(0),
-                        data.stream().map(TracksAnalyticsItem::getTempo)
+                        data.stream().map(TracksAnalyticsItemSchema::getTempo)
                                 .mapToDouble(TrackFeatureAnalyticsDocumentSchema::getSum)
                                 .sum()
-                                / data.stream().mapToDouble(TracksAnalyticsItem::getTracksCount).sum()
+                                / data.stream().mapToDouble(TracksAnalyticsItemSchema::getTracksCount).sum()
                 )
         );
     }

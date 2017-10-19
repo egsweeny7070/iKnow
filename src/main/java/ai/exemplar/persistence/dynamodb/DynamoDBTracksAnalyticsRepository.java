@@ -2,7 +2,6 @@ package ai.exemplar.persistence.dynamodb;
 
 import ai.exemplar.persistence.TracksAnalyticsRepository;
 import ai.exemplar.persistence.dynamodb.schema.analytics.TracksAnalyticsItemSchema;
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
 import ai.exemplar.utils.dynamodb.CreateTableHelper;
 import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -16,11 +15,10 @@ import org.apache.log4j.Logger;
 import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DynamoDBTracksAnalyticsRepository implements TracksAnalyticsRepository {
 
-    static final Logger log = Logger.getLogger(DynamoDBPaymentsAnalyticsRepository.class);
+    static final Logger log = Logger.getLogger(DynamoDBTracksAnalyticsRepository.class);
 
     private final DynamoDBTableMapper<TracksAnalyticsItemSchema, String, String> tracksAnalytics;
 
@@ -46,10 +44,8 @@ public class DynamoDBTracksAnalyticsRepository implements TracksAnalyticsReposit
     }
 
     @Override
-    public void save(List<TracksAnalyticsItem> batch) {
-        List<DynamoDBMapper.FailedBatch> failed = tracksAnalytics.batchSave(batch.stream()
-                .map(TracksAnalyticsItemSchema::fromDomain)
-                .collect(Collectors.toList()));
+    public void save(List<TracksAnalyticsItemSchema> batch) {
+        List<DynamoDBMapper.FailedBatch> failed = tracksAnalytics.batchSave(batch);
 
         if (!failed.isEmpty()) {
             failed.stream()
@@ -63,13 +59,12 @@ public class DynamoDBTracksAnalyticsRepository implements TracksAnalyticsReposit
     }
 
     @Override
-    public List<TracksAnalyticsItem> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    public List<TracksAnalyticsItemSchema> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
         return tracksAnalytics.query(
                 new DynamoDBQueryExpression<TracksAnalyticsItemSchema>()
-                        .withIndexName("LocationTracksIndex")
                         .withHashKeyValues(TracksAnalyticsItemSchema
                                 .partitionKey(location))
-                        .withRangeKeyCondition("timestamp", new Condition()
+                        .withRangeKeyCondition("rowTime", new Condition()
                                 .withComparisonOperator(ComparisonOperator.BETWEEN)
                                 .withAttributeValueList(
                                         new AttributeValue().withS(new LocalDateTimeTypeConverter()
@@ -77,9 +72,7 @@ public class DynamoDBTracksAnalyticsRepository implements TracksAnalyticsReposit
                                         new AttributeValue().withS(new LocalDateTimeTypeConverter()
                                                 .convert(timestampTo))
                                 ))
-                        .withConsistentRead(false)
-        ).stream()
-                .map(TracksAnalyticsItemSchema::toDomain)
-                .collect(Collectors.toList());
+                        .withConsistentRead(true)
+        );
     }
 }

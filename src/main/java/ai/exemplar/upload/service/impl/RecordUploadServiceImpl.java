@@ -2,13 +2,12 @@ package ai.exemplar.upload.service.impl;
 
 import ai.exemplar.persistence.PaymentsAnalyticsRepository;
 import ai.exemplar.persistence.TracksAnalyticsRepository;
+import ai.exemplar.persistence.dynamodb.schema.analytics.PaymentsAnalyticsItemSchema;
 import ai.exemplar.persistence.dynamodb.schema.analytics.TrackFeatureAnalyticsDocumentSchema;
-import ai.exemplar.persistence.model.PaymentsAnalyticsItem;
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.TracksAnalyticsItemSchema;
 import ai.exemplar.upload.service.RecordUploadService;
 import ai.exemplar.upload.service.values.UploadStreamRecord;
 import ai.exemplar.utils.json.GsonFabric;
-import com.amazonaws.util.Base64;
 import com.amazonaws.util.StringUtils;
 import com.google.gson.Gson;
 import org.apache.log4j.Logger;
@@ -52,13 +51,12 @@ public class RecordUploadServiceImpl implements RecordUploadService {
                 ))
                 .collect(Collectors.toList());
 
-        List<PaymentsAnalyticsItem> paymentsAnalyticsItems = records.stream()
+        List<PaymentsAnalyticsItemSchema> paymentsAnalyticsItems = records.stream()
                 .filter(record -> record
                         .getTotalPaymentsCount() != null)
-                .map(record -> new PaymentsAnalyticsItem(
+                .map(record -> new PaymentsAnalyticsItemSchema(
                         record.getLocation(),
                         record.getIngest(),
-                        record.getTimestamp(),
                         record.getTotalPaymentsCount(),
                         record.getTotalItemsCount(),
                         record.getTotalDiscountPercent(),
@@ -66,13 +64,12 @@ public class RecordUploadServiceImpl implements RecordUploadService {
                 ))
                 .collect(Collectors.toList());
 
-        List<TracksAnalyticsItem> tracksAnalyticsItems = records.stream()
+        List<TracksAnalyticsItemSchema> tracksAnalyticsItems = records.stream()
                 .filter(record -> record
                         .getTracksCount() != null)
-                .map(record -> new TracksAnalyticsItem(
+                .map(record -> new TracksAnalyticsItemSchema(
                         record.getLocation(),
                         record.getIngest(),
-                        record.getTimestamp(),
                         record.getTracksCount(),
                         new TrackFeatureAnalyticsDocumentSchema(
                                 record.getMinAcousticness(),

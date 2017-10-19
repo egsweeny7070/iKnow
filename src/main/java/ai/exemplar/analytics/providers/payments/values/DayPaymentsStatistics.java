@@ -1,10 +1,8 @@
 package ai.exemplar.analytics.providers.payments.values;
 
-import java.time.LocalDate;
-
 public class DayPaymentsStatistics {
 
-    private String date;
+    private String day;
 
     private Double sales;
 
@@ -16,8 +14,8 @@ public class DayPaymentsStatistics {
 
     private Double averageItemPrice;
 
-    public DayPaymentsStatistics(String date, Double sales, Integer totalItemsPurchased, Double averageSale, Double averageItemsPurchased, Double averageItemPrice) {
-        this.date = date;
+    public DayPaymentsStatistics(String day, Double sales, Integer totalItemsPurchased, Double averageSale, Double averageItemsPurchased, Double averageItemPrice) {
+        this.day = day;
         this.sales = sales;
         this.totalItemsPurchased = totalItemsPurchased;
         this.averageSale = averageSale;
@@ -25,12 +23,12 @@ public class DayPaymentsStatistics {
         this.averageItemPrice = averageItemPrice;
     }
 
-    public String getDate() {
-        return date;
+    public String getDay() {
+        return day;
     }
 
-    public void setDate(String date) {
-        this.date = date;
+    public void setDay(String day) {
+        this.day = day;
     }
 
     public Double getSales() {

@@ -9,9 +9,6 @@ public class UploadStreamRecord {
     @SerializedName("INGEST_TIME")
     private LocalDateTime ingest;
 
-    @SerializedName("THEHOUR")
-    private LocalDateTime timestamp;
-
     @SerializedName("LOCATION")
     private String location;
 
@@ -156,14 +153,6 @@ public class UploadStreamRecord {
 
     public void setIngest(LocalDateTime ingest) {
         this.ingest = ingest;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 
     public String getLocation() {

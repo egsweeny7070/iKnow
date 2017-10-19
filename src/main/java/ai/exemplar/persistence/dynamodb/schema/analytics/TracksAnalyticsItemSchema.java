@@ -1,6 +1,5 @@
 package ai.exemplar.persistence.dynamodb.schema.analytics;
 
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
 import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
@@ -12,10 +11,6 @@ public class TracksAnalyticsItemSchema {
     private String location;
 
     private LocalDateTime rowTime;
-
-    private String rangeKey;
-
-    private LocalDateTime timestamp;
 
     private Integer tracksCount;
 
@@ -42,11 +37,9 @@ public class TracksAnalyticsItemSchema {
     public TracksAnalyticsItemSchema() {
     }
 
-    public TracksAnalyticsItemSchema(String location, LocalDateTime rowTime, String rangeKey, LocalDateTime timestamp, Integer tracksCount, TrackFeatureAnalyticsDocumentSchema acousticness, TrackFeatureAnalyticsDocumentSchema danceability, TrackFeatureAnalyticsDocumentSchema energy, TrackFeatureAnalyticsDocumentSchema instrumentalness, TrackFeatureAnalyticsDocumentSchema liveness, TrackFeatureAnalyticsDocumentSchema loudness, TrackFeatureAnalyticsDocumentSchema speechiness, TrackFeatureAnalyticsDocumentSchema valence, TrackFeatureAnalyticsDocumentSchema duration, TrackFeatureAnalyticsDocumentSchema tempo) {
+    public TracksAnalyticsItemSchema(String location, LocalDateTime rowTime, Integer tracksCount, TrackFeatureAnalyticsDocumentSchema acousticness, TrackFeatureAnalyticsDocumentSchema danceability, TrackFeatureAnalyticsDocumentSchema energy, TrackFeatureAnalyticsDocumentSchema instrumentalness, TrackFeatureAnalyticsDocumentSchema liveness, TrackFeatureAnalyticsDocumentSchema loudness, TrackFeatureAnalyticsDocumentSchema speechiness, TrackFeatureAnalyticsDocumentSchema valence, TrackFeatureAnalyticsDocumentSchema duration, TrackFeatureAnalyticsDocumentSchema tempo) {
         this.location = location;
         this.rowTime = rowTime;
-        this.rangeKey = rangeKey;
-        this.timestamp = timestamp;
         this.tracksCount = tracksCount;
         this.acousticness = acousticness;
         this.danceability = danceability;
@@ -65,7 +58,6 @@ public class TracksAnalyticsItemSchema {
     }
 
     @DynamoDBHashKey(attributeName = "location")
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "LocationTracksIndex", attributeName = "location")
     public String getLocation() {
         return location;
     }
@@ -75,32 +67,13 @@ public class TracksAnalyticsItemSchema {
     }
 
     @DynamoDBTypeConverted(converter = LocalDateTimeTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "rowTime")
+    @DynamoDBRangeKey(attributeName = "rowTime")
     public LocalDateTime getRowTime() {
         return rowTime;
     }
 
     public void setRowTime(LocalDateTime rowTime) {
         this.rowTime = rowTime;
-    }
-
-    @DynamoDBRangeKey(attributeName = "rangeKey")
-    public String getRangeKey() {
-        return rangeKey;
-    }
-
-    public void setRangeKey(String rangeKey) {
-        this.rangeKey = rangeKey;
-    }
-
-    @DynamoDBTypeConverted(converter = LocalDateTimeTypeConverter.class)
-    @DynamoDBIndexRangeKey(globalSecondaryIndexName = "LocationTracksIndex", attributeName = "timestamp")
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 
     @DynamoDBAttribute(attributeName = "tracksCount")
@@ -202,52 +175,9 @@ public class TracksAnalyticsItemSchema {
         this.tempo = tempo;
     }
 
-    private static final String RANGE_KEY_DELIMITER = "_";
-
-    public TracksAnalyticsItem toDomain() {
-        return new TracksAnalyticsItem(
-                this.getLocation(),
-                this.getRowTime(),
-                this.getTimestamp(),
-                this.getTracksCount(),
-                this.getAcousticness(),
-                this.getDanceability(),
-                this.getEnergy(),
-                this.getInstrumentalness(),
-                this.getLiveness(),
-                this.getLoudness(),
-                this.getSpeechiness(),
-                this.getValence(),
-                this.getDuration(),
-                this.getTempo()
-        );
-    }
-
     public static TracksAnalyticsItemSchema partitionKey(String location) {
         return new TracksAnalyticsItemSchema(
                 location
-        );
-    }
-
-    public static TracksAnalyticsItemSchema fromDomain(TracksAnalyticsItem domain) {
-        return new TracksAnalyticsItemSchema(
-                domain.getLocation(),
-                domain.getRowTime(),
-                new LocalDateTimeTypeConverter().convert(domain.getRowTime())
-                        + RANGE_KEY_DELIMITER
-                        + new LocalDateTimeTypeConverter().convert(domain.getTimestamp()),
-                domain.getTimestamp(),
-                domain.getTracksCount(),
-                domain.getAcousticness(),
-                domain.getDanceability(),
-                domain.getEnergy(),
-                domain.getInstrumentalness(),
-                domain.getLiveness(),
-                domain.getLoudness(),
-                domain.getSpeechiness(),
-                domain.getValence(),
-                domain.getDuration(),
-                domain.getTempo()
         );
     }
 }

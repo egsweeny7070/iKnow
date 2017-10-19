@@ -2,7 +2,6 @@ package ai.exemplar.persistence.dynamodb;
 
 import ai.exemplar.persistence.PaymentsAnalyticsRepository;
 import ai.exemplar.persistence.dynamodb.schema.analytics.PaymentsAnalyticsItemSchema;
-import ai.exemplar.persistence.model.PaymentsAnalyticsItem;
 import ai.exemplar.utils.dynamodb.CreateTableHelper;
 import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -16,7 +15,6 @@ import org.apache.log4j.Logger;
 import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DynamoDBPaymentsAnalyticsRepository implements PaymentsAnalyticsRepository {
 
@@ -46,10 +44,8 @@ public class DynamoDBPaymentsAnalyticsRepository implements PaymentsAnalyticsRep
     }
 
     @Override
-    public void save(List<PaymentsAnalyticsItem> batch) {
-        List<DynamoDBMapper.FailedBatch> failed = paymentsAnalytics.batchSave(batch.stream()
-                .map(PaymentsAnalyticsItemSchema::fromDomain)
-                .collect(Collectors.toList()));
+    public void save(List<PaymentsAnalyticsItemSchema> batch) {
+        List<DynamoDBMapper.FailedBatch> failed = paymentsAnalytics.batchSave(batch);
 
         if (!failed.isEmpty()) {
             failed.stream()
@@ -63,13 +59,12 @@ public class DynamoDBPaymentsAnalyticsRepository implements PaymentsAnalyticsRep
     }
 
     @Override
-    public List<PaymentsAnalyticsItem> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+    public List<PaymentsAnalyticsItemSchema> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
         return paymentsAnalytics.query(
                 new DynamoDBQueryExpression<PaymentsAnalyticsItemSchema>()
-                        .withIndexName("LocationPaymentsIndex")
                         .withHashKeyValues(PaymentsAnalyticsItemSchema
                                 .partitionKey(location))
-                        .withRangeKeyCondition("timestamp", new Condition()
+                        .withRangeKeyCondition("rowTime", new Condition()
                                 .withComparisonOperator(ComparisonOperator.BETWEEN)
                                 .withAttributeValueList(
                                         new AttributeValue().withS(new LocalDateTimeTypeConverter()
@@ -77,9 +72,7 @@ public class DynamoDBPaymentsAnalyticsRepository implements PaymentsAnalyticsRep
                                         new AttributeValue().withS(new LocalDateTimeTypeConverter()
                                                 .convert(timestampTo))
                                 ))
-                        .withConsistentRead(false)
-        ).stream()
-                .map(PaymentsAnalyticsItemSchema::toDomain)
-                .collect(Collectors.toList());
+                        .withConsistentRead(true)
+        );
     }
 }

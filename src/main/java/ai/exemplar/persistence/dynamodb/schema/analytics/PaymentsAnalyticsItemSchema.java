@@ -1,6 +1,5 @@
 package ai.exemplar.persistence.dynamodb.schema.analytics;
 
-import ai.exemplar.persistence.model.PaymentsAnalyticsItem;
 import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
 
@@ -13,10 +12,6 @@ public class PaymentsAnalyticsItemSchema {
 
     private LocalDateTime rowTime;
 
-    private String rangeKey;
-
-    private LocalDateTime timestamp;
-
     private Integer totalPaymentsCount;
 
     private Integer totalItemsCount;
@@ -28,11 +23,9 @@ public class PaymentsAnalyticsItemSchema {
     public PaymentsAnalyticsItemSchema() {
     }
 
-    public PaymentsAnalyticsItemSchema(String location, LocalDateTime rowTime, String rangeKey, LocalDateTime timestamp, Integer totalPaymentsCount, Integer totalItemsCount, Double totalDiscountPercent, Double collectedAmount) {
+    public PaymentsAnalyticsItemSchema(String location, LocalDateTime rowTime, Integer totalPaymentsCount, Integer totalItemsCount, Double totalDiscountPercent, Double collectedAmount) {
         this.location = location;
         this.rowTime = rowTime;
-        this.rangeKey = rangeKey;
-        this.timestamp = timestamp;
         this.totalPaymentsCount = totalPaymentsCount;
         this.totalItemsCount = totalItemsCount;
         this.totalDiscountPercent = totalDiscountPercent;
@@ -44,7 +37,6 @@ public class PaymentsAnalyticsItemSchema {
     }
 
     @DynamoDBHashKey(attributeName = "location")
-    @DynamoDBIndexHashKey(globalSecondaryIndexName = "LocationPaymentsIndex", attributeName = "location")
     public String getLocation() {
         return location;
     }
@@ -54,32 +46,13 @@ public class PaymentsAnalyticsItemSchema {
     }
 
     @DynamoDBTypeConverted(converter = LocalDateTimeTypeConverter.class)
-    @DynamoDBAttribute(attributeName = "rowTime")
+    @DynamoDBRangeKey(attributeName = "rowTime")
     public LocalDateTime getRowTime() {
         return rowTime;
     }
 
     public void setRowTime(LocalDateTime rowTime) {
         this.rowTime = rowTime;
-    }
-
-    @DynamoDBRangeKey(attributeName = "rangeKey")
-    public String getRangeKey() {
-        return rangeKey;
-    }
-
-    public void setRangeKey(String rangeKey) {
-        this.rangeKey = rangeKey;
-    }
-
-    @DynamoDBTypeConverted(converter = LocalDateTimeTypeConverter.class)
-    @DynamoDBIndexRangeKey(globalSecondaryIndexName = "LocationPaymentsIndex", attributeName = "timestamp")
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
     }
 
     @DynamoDBAttribute(attributeName = "totalPaymentsCount")
@@ -118,38 +91,9 @@ public class PaymentsAnalyticsItemSchema {
         this.collectedAmount = collectedAmount;
     }
 
-    private static final String RANGE_KEY_DELIMITER = "_";
-
-    public PaymentsAnalyticsItem toDomain() {
-        return new PaymentsAnalyticsItem(
-                this.getLocation(),
-                this.getRowTime(),
-                this.getTimestamp(),
-                this.getTotalPaymentsCount(),
-                this.getTotalItemsCount(),
-                this.getTotalDiscountPercent(),
-                this.getCollectedAmount()
-        );
-    }
-
     public static PaymentsAnalyticsItemSchema partitionKey(String location) {
         return new PaymentsAnalyticsItemSchema(
                 location
-        );
-    }
-
-    public static PaymentsAnalyticsItemSchema fromDomain(PaymentsAnalyticsItem domain) {
-        return new PaymentsAnalyticsItemSchema(
-                domain.getLocation(),
-                domain.getRowTime(),
-                new LocalDateTimeTypeConverter().convert(domain.getRowTime())
-                        + RANGE_KEY_DELIMITER
-                        + new LocalDateTimeTypeConverter().convert(domain.getTimestamp()),
-                domain.getTimestamp(),
-                domain.getTotalPaymentsCount(),
-                domain.getTotalItemsCount(),
-                domain.getTotalDiscountPercent(),
-                domain.getCollectedAmount()
         );
     }
 }

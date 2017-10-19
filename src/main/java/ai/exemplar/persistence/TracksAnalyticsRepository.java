@@ -1,13 +1,13 @@
 package ai.exemplar.persistence;
 
-import ai.exemplar.persistence.model.TracksAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.TracksAnalyticsItemSchema;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TracksAnalyticsRepository {
 
-    void save(List<TracksAnalyticsItem> batch);
+    void save(List<TracksAnalyticsItemSchema> batch);
 
-    List<TracksAnalyticsItem> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo);
+    List<TracksAnalyticsItemSchema> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo);
 }

@@ -3,7 +3,7 @@ package ai.exemplar.analytics.providers.payments;
 import ai.exemplar.analytics.AnalyticsProvider;
 import ai.exemplar.analytics.providers.payments.values.DayPaymentsStatistics;
 import ai.exemplar.persistence.PaymentsAnalyticsRepository;
-import ai.exemplar.persistence.model.PaymentsAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.PaymentsAnalyticsItemSchema;
 import ai.exemplar.proxy.service.exceptions.BadRequestException;
 import org.apache.log4j.Logger;
 
@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -75,42 +76,44 @@ public class BasicPaymentsDiagramProvider implements AnalyticsProvider {
 
         return repository.query(location, startTimestamp, endTimestamp).stream()
                 .collect(Collectors
-                        .groupingBy(PaymentsAnalyticsItem::getTimestamp))
+                        .groupingBy(PaymentsAnalyticsItemSchema::getRowTime))
                 .entrySet().stream()
-                .map(entry -> new PaymentsAnalyticsItem(
+                .map(entry -> new PaymentsAnalyticsItemSchema(
                         location,
                         entry.getKey().atZone(ZoneId.systemDefault())
                                 .withZoneSameInstant(offset).toLocalDateTime(),
-                        null,
                         entry.getValue().stream()
-                                .mapToInt(PaymentsAnalyticsItem::getTotalPaymentsCount).sum(),
+                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalPaymentsCount).sum(),
                         entry.getValue().stream()
-                                .mapToInt(PaymentsAnalyticsItem::getTotalItemsCount).sum(),
+                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum(),
                         entry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getTotalDiscountPercent).sum(),
+                                .map(PaymentsAnalyticsItemSchema::getTotalDiscountPercent)
+                                .filter(Objects::nonNull)
+                                .mapToDouble(v -> v).sum(),
                         entry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getCollectedAmount).sum()))
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum()))
                 .collect(Collectors
-                        .groupingBy(item -> item.getRowTime().toLocalDate()))
+                        .groupingBy(item -> item.getRowTime().toLocalDate()
+                                .getDayOfWeek()))
                 .entrySet().stream()
                 .map(localDateListEntry -> new DayPaymentsStatistics(
                         localDateListEntry.getKey().toString(),
                         localDateListEntry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getCollectedAmount).sum(),
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum(),
                         localDateListEntry.getValue().stream()
-                                .mapToInt(PaymentsAnalyticsItem::getTotalItemsCount).sum(),
+                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum(),
                         localDateListEntry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getCollectedAmount).sum() /
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum() /
                                 localDateListEntry.getValue().stream()
-                                        .mapToDouble(PaymentsAnalyticsItem::getTotalPaymentsCount).sum(),
+                                        .mapToDouble(PaymentsAnalyticsItemSchema::getTotalPaymentsCount).sum(),
                         localDateListEntry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getTotalItemsCount).sum() /
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum() /
                                 localDateListEntry.getValue().stream()
-                                        .mapToDouble(PaymentsAnalyticsItem::getTotalPaymentsCount).sum(),
+                                        .mapToDouble(PaymentsAnalyticsItemSchema::getTotalPaymentsCount).sum(),
                         localDateListEntry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItem::getCollectedAmount).sum() /
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum() /
                                 localDateListEntry.getValue().stream()
-                                        .mapToDouble(PaymentsAnalyticsItem::getTotalItemsCount).sum()
+                                        .mapToDouble(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum()
                 ))
                 .collect(Collectors.toList());
     }

@@ -5,7 +5,7 @@
 -- Stream of all the payments
 CREATE OR REPLACE STREAM "Payment_Stream" ( 
 	location				VARCHAR(64),
-	COL_timestamp			TIMESTAMP,
+	ingest_time				TIMESTAMP,
 	device					VARCHAR(64),
 	items_count				INTEGER,
 	collected				DECIMAL,
@@ -21,7 +21,7 @@ CREATE OR REPLACE STREAM "Payment_Stream" (
 
 CREATE OR REPLACE PUMP "Payment_Pump" AS INSERT INTO "Payment_Stream"
 SELECT STREAM 
-	location, COL_timestamp, device, 
+	location, "SOURCE_SQL_STREAM_001".ROWTIME, device, 
 	items_count, collected, discount, tip, tax, fee, 
 	tender_type, tender_card_brand, tender_card_suffix, tender_entry_method 
 FROM "SOURCE_SQL_STREAM_001"
@@ -32,7 +32,7 @@ WHERE
 -- Stream of all the items from payments
 CREATE OR REPLACE STREAM "Item_Stream" ( 
 	location				VARCHAR(64),
-	COL_timestamp			TIMESTAMP,
+	ingest_time				TIMESTAMP,
 	device					VARCHAR(64),
 	name					VARCHAR(128),
 	quantity				DECIMAL,
@@ -49,7 +49,7 @@ CREATE OR REPLACE STREAM "Item_Stream" (
 
 CREATE OR REPLACE PUMP "Item_Pump" AS INSERT INTO "Item_Stream"
 SELECT STREAM 
-	location, COL_timestamp, device, 
+	location, "SOURCE_SQL_STREAM_001".ROWTIME, device, 
 	name, quantity, category, variation, sku, 
 	total, single_quantity, gross_sales, net_sales, 
 	modifier_type, modifier_name 
@@ -60,7 +60,7 @@ WHERE
 -- Stream of all tracks in play history
 CREATE OR REPLACE STREAM "Track_Stream" ( 
 	location				VARCHAR(64),
-	COL_timestamp			TIMESTAMP,
+	ingest_time				TIMESTAMP,
 	name					VARCHAR(128),
 	artist					VARCHAR(128),
 	label					VARCHAR(128),
@@ -72,9 +72,9 @@ CREATE OR REPLACE STREAM "Track_Stream" (
 	disc_number				INTEGER,
 	track_number			INTEGER,
 	track_popularity		INTEGER,
-	duration				INTEGER,
+	duration				REAL,
 	mode					INTEGER,
-	tonality				INTEGER,
+	tonality				REAL,
 	time_signature			INTEGER,
 	tempo					REAL,
 	acousticness			REAL,
@@ -89,10 +89,10 @@ CREATE OR REPLACE STREAM "Track_Stream" (
 
 CREATE OR REPLACE PUMP "Track_Pump" AS INSERT INTO "Track_Stream"
 SELECT STREAM 
-	location, COL_timestamp, 
+	location, "SOURCE_SQL_STREAM_001".ROWTIME, 
 	name, artist, label, album_name, 
 	genres, album_popularity, release_date, release_date_precision, disc_number, track_number, 
-	track_popularity, duration, mode, tonality, time_signature, tempo, 
+	track_popularity, duration / 1000, mode, tonality, time_signature, tempo, 
 	acousticness, danceability, energy, instrumentalness, liveness, loudness, speechiness, valence 
 FROM "SOURCE_SQL_STREAM_001"
 WHERE 
@@ -105,7 +105,6 @@ WHERE
 -- Stream for payments analytics with tumbling windows 1 hour size
 CREATE OR REPLACE STREAM "Payment_Analytics_Stream" ( 
 	ingest_time				VARCHAR(32), 
-	theHour					VARCHAR(32),
 	location				VARCHAR(64),
 	total_payments_count	INTEGER,
 	total_items_count		INTEGER,
@@ -115,8 +114,7 @@ CREATE OR REPLACE STREAM "Payment_Analytics_Stream" (
 
 CREATE OR REPLACE PUMP "Payment_Analytics_Pump" AS INSERT INTO "Payment_Analytics_Stream"
 SELECT STREAM 
-	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', STEP("Payment_Stream".ROWTIME BY INTERVAL '1' HOUR))		AS ingest_time,
-	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', MONOTONIC(FLOOR("Payment_Stream".COL_timestamp TO HOUR)))	AS theHour, 
+	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', MONOTONIC(FLOOR("Payment_Stream".ingest_time TO HOUR)))	AS ingest_time, 
 	location, 
 	COUNT(*) AS total_payments_count,
 	SUM(items_count) AS total_items_count,
@@ -124,15 +122,13 @@ SELECT STREAM
 	SUM(collected) AS collected_amount
 FROM "Payment_Stream"
 GROUP BY 
-	location,
-	STEP("Payment_Stream".ROWTIME BY INTERVAL '1' HOUR), 
-	MONOTONIC(FLOOR("Payment_Stream".COL_timestamp TO HOUR));
+	MONOTONIC(FLOOR("Payment_Stream".ingest_time TO HOUR)),
+	location;
 
 
 -- Stream for play history analytics with tumbling windows 1 hour size
 CREATE OR REPLACE STREAM "Track_Analytics_Stream" (
 	ingest_time					VARCHAR(32), 
-	theHour						VARCHAR(32),
 	location					VARCHAR(64),
 	tracks_count				INTEGER,
 	sum_acousticness			REAL,
@@ -179,8 +175,7 @@ CREATE OR REPLACE STREAM "Track_Analytics_Stream" (
 
 CREATE OR REPLACE PUMP "Track_Analytics_Pump" AS INSERT INTO "Track_Analytics_Stream"
 SELECT STREAM
-	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', STEP("Track_Stream".ROWTIME BY INTERVAL '1' HOUR))		AS ingest_time,
-	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', MONOTONIC(FLOOR("Track_Stream".COL_timestamp TO HOUR)))	AS theHour, 
+	TIMESTAMP_TO_CHAR('yyyy-MM-dd HH:mm:ss', MONOTONIC(FLOOR("Track_Stream".ingest_time TO HOUR)))	AS ingest_time, 
 	location,
 	COUNT(*) AS tracks_count,
 	SUM(acousticness) AS sum_acousticness,
@@ -213,18 +208,17 @@ SELECT STREAM
 	MAX(valence) AS max_valence,
 	MAX(duration) AS max_duration,
 	MAX(tempo) AS max_tempo,
-	STDDEV_SAMP(acousticness) AS std_acousticness,
-	STDDEV_SAMP(danceability) AS std_danceability,
-	STDDEV_SAMP(energy) AS std_energy,
-	STDDEV_SAMP(instrumentalness) AS std_instrumentalness,
-	STDDEV_SAMP(liveness) AS std_liveness,
-	STDDEV_SAMP(loudness) AS std_loudness,
-	STDDEV_SAMP(speechiness) AS std_speechiness,
-	STDDEV_SAMP(valence) AS std_valence,
-	STDDEV_SAMP(duration) AS std_duration,
-	STDDEV_SAMP(tempo) AS std_tempo
+	STDDEV_POP(acousticness) AS std_acousticness,
+	STDDEV_POP(danceability) AS std_danceability,
+	STDDEV_POP(energy) AS std_energy,
+	STDDEV_POP(instrumentalness) AS std_instrumentalness,
+	STDDEV_POP(liveness) AS std_liveness,
+	STDDEV_POP(loudness) AS std_loudness,
+	STDDEV_POP(speechiness) AS std_speechiness,
+	STDDEV_POP(valence) AS std_valence,
+	STDDEV_POP(duration) AS std_duration,
+	STDDEV_POP(tempo) AS std_tempo
 FROM "Track_Stream"
 GROUP BY
-	location,
-	STEP("Track_Stream".ROWTIME BY INTERVAL '1' HOUR), 
-	MONOTONIC(FLOOR("Track_Stream".COL_timestamp TO HOUR));
+	MONOTONIC(FLOOR("Track_Stream".ingest_time TO HOUR)),
+	location;

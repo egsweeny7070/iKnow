@@ -1,13 +1,13 @@
 package ai.exemplar.persistence;
 
-import ai.exemplar.persistence.model.PaymentsAnalyticsItem;
+import ai.exemplar.persistence.dynamodb.schema.analytics.PaymentsAnalyticsItemSchema;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PaymentsAnalyticsRepository {
 
-    void save(List<PaymentsAnalyticsItem> batch);
+    void save(List<PaymentsAnalyticsItemSchema> batch);
 
-    List<PaymentsAnalyticsItem> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo);
+    List<PaymentsAnalyticsItemSchema> query(String location, LocalDateTime timestampFrom, LocalDateTime timestampTo);
 }
