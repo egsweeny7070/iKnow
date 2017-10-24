@@ -93,15 +93,34 @@ public class BasicPaymentsDiagramProvider implements AnalyticsProvider {
                         entry.getValue().stream()
                                 .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum()))
                 .collect(Collectors
+                        .groupingBy(item -> item.getRowTime().toLocalDate()))
+                .entrySet().stream()
+                .map(localDateListEntry -> new PaymentsAnalyticsItemSchema(
+                        null,
+                        localDateListEntry.getKey().atTime(LocalTime.MIDNIGHT),
+                        localDateListEntry.getValue().stream()
+                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalPaymentsCount).sum(),
+                        localDateListEntry.getValue().stream()
+                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum(),
+                        localDateListEntry.getValue().stream()
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getTotalDiscountPercent).sum(),
+                        localDateListEntry.getValue().stream()
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum()
+                ))
+                .collect(Collectors
                         .groupingBy(item -> item.getRowTime().toLocalDate()
                                 .getDayOfWeek()))
                 .entrySet().stream()
                 .map(localDateListEntry -> new DayPaymentsStatistics(
                         localDateListEntry.getKey().toString(),
                         localDateListEntry.getValue().stream()
-                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum(),
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum() /
+                                localDateListEntry.getValue()
+                                        .size(),
                         localDateListEntry.getValue().stream()
-                                .mapToInt(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum(),
+                                .mapToDouble(PaymentsAnalyticsItemSchema::getTotalItemsCount).sum() /
+                                localDateListEntry.getValue()
+                                        .size(),
                         localDateListEntry.getValue().stream()
                                 .mapToDouble(PaymentsAnalyticsItemSchema::getCollectedAmount).sum() /
                                 localDateListEntry.getValue().stream()

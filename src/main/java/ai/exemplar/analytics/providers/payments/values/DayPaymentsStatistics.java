@@ -6,7 +6,7 @@ public class DayPaymentsStatistics {
 
     private Double sales;
 
-    private Integer totalItemsPurchased;
+    private Double totalItemsPurchased;
 
     private Double averageSale;
 
@@ -14,7 +14,7 @@ public class DayPaymentsStatistics {
 
     private Double averageItemPrice;
 
-    public DayPaymentsStatistics(String day, Double sales, Integer totalItemsPurchased, Double averageSale, Double averageItemsPurchased, Double averageItemPrice) {
+    public DayPaymentsStatistics(String day, Double sales, Double totalItemsPurchased, Double averageSale, Double averageItemsPurchased, Double averageItemPrice) {
         this.day = day;
         this.sales = sales;
         this.totalItemsPurchased = totalItemsPurchased;
@@ -39,11 +39,11 @@ public class DayPaymentsStatistics {
         this.sales = sales;
     }
 
-    public Integer getTotalItemsPurchased() {
+    public Double getTotalItemsPurchased() {
         return totalItemsPurchased;
     }
 
-    public void setTotalItemsPurchased(Integer totalItemsPurchased) {
+    public void setTotalItemsPurchased(Double totalItemsPurchased) {
         this.totalItemsPurchased = totalItemsPurchased;
     }
 
