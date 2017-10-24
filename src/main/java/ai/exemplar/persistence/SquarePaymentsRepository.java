@@ -7,4 +7,6 @@ import java.util.List;
 public interface SquarePaymentsRepository {
 
     void batchSave(List<SquarePayment> batch);
+
+    List<SquarePayment> scan();
 }

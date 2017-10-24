@@ -1,8 +1,9 @@
-package ai.exemplar.streams.kinesis;
+package ai.exemplar.streams.impl;
 
 import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
 import ai.exemplar.persistence.model.SquarePayment;
 import ai.exemplar.streams.StreamsAppender;
+import ai.exemplar.streams.kinesis.KinesisStreamName;
 import ai.exemplar.streams.values.StreamEvent;
 import ai.exemplar.utils.json.GsonFabric;
 import com.amazonaws.AmazonClientException;
@@ -19,17 +20,18 @@ public class KinesisStreamsAppender implements StreamsAppender {
 
     static final Logger log = Logger.getLogger(KinesisStreamsAppender.class);
 
-    private static final String STREAM = "Exemplar_Events";
+    private final String streamName;
 
     private final AmazonKinesis kinesis;
 
     private final Gson gson = GsonFabric.simplified();
 
     @Inject
-    public KinesisStreamsAppender(AmazonKinesis kinesis) {
+    public KinesisStreamsAppender(@KinesisStreamName String streamName, AmazonKinesis kinesis) {
+        this.streamName = streamName;
         this.kinesis = kinesis;
 
-        createIfNotExists(STREAM);
+        createIfNotExists(streamName);
     }
 
     private void createIfNotExists(String streamName) {
@@ -59,12 +61,12 @@ public class KinesisStreamsAppender implements StreamsAppender {
     private void write(StreamEvent event) {
         PutRecordRequest putRecord = new PutRecordRequest();
 
-        putRecord.setStreamName(STREAM);
+        putRecord.setStreamName(streamName);
         putRecord.setPartitionKey(event.getKey());
 
         String jsonBody = gson.toJson(event);
 
-        log.debug(String.format("publishing entry with key %s to stream %s", event.getKey(), STREAM));
+        log.debug(String.format("publishing entry with key %s to stream %s", event.getKey(), streamName));
 
         try {
             putRecord.setData(ByteBuffer
@@ -73,10 +75,10 @@ public class KinesisStreamsAppender implements StreamsAppender {
             kinesis.putRecord(putRecord);
 
         } catch (AmazonClientException e) {
-            log.error(String.format("publishing key %s to stream %s exception", event.getKey(), STREAM), e);
+            log.error(String.format("publishing key %s to stream %s exception", event.getKey(), streamName), e);
 
         } catch (Exception e) {
-            log.error(String.format("publishing key %s to stream %s runtime exception", event.getKey(), STREAM), e);
+            log.error(String.format("publishing key %s to stream %s runtime exception", event.getKey(), streamName), e);
 
             throw new RuntimeException(e);
         }

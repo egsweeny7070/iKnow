@@ -9,6 +9,7 @@ import ai.exemplar.dependencies.AmazonKinesisModule;
 import ai.exemplar.dependencies.DynamoDBModule;
 import ai.exemplar.persistence.DynamoDBPersistenceModule;
 import ai.exemplar.streams.StreamsModule;
+import ai.exemplar.streams.kinesis.KinesisStreamsModule;
 import dagger.Component;
 
 import javax.inject.Singleton;
@@ -20,6 +21,7 @@ import javax.inject.Singleton;
         ApiProvidersModule.class,
         CommonServicesModule.class,
         AmazonKinesisModule.class,
+        KinesisStreamsModule.class,
         StreamsModule.class,
         DataFetchersModule.class,
         DataServiceModule.class

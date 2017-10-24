@@ -5,10 +5,7 @@ import ai.exemplar.persistence.dynamodb.schema.square.PaymentSchema;
 import ai.exemplar.persistence.model.SquarePayment;
 import ai.exemplar.utils.dynamodb.CreateTableHelper;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.datamodeling.ConversionSchemas;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTableMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import org.apache.log4j.Logger;
 
@@ -59,5 +56,13 @@ public class DynamoDBSquarePaymentsRepository implements SquarePaymentsRepositor
                     .map(DynamoDBMapper.FailedBatch::getException)
                     .findAny().get());
         }
+    }
+
+    @Override
+    public List<SquarePayment> scan() {
+        return squarePayments.scan(new DynamoDBScanExpression()
+                .withConsistentRead(false)).stream()
+                .map(PaymentSchema::toModel)
+                .collect(Collectors.toList());
     }
 }

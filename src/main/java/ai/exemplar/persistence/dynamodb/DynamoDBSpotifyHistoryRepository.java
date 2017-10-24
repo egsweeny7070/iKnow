@@ -63,4 +63,10 @@ public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepositor
                     .findAny().get());
         }
     }
+
+    @Override
+    public List<PlayHistoryItemSchema> scan() {
+        return spotifyHistory.scan(new DynamoDBScanExpression()
+                .withConsistentRead(false));
+    }
 }

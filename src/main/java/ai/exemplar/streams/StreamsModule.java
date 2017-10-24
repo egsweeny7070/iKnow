@@ -1,6 +1,6 @@
 package ai.exemplar.streams;
 
-import ai.exemplar.streams.kinesis.KinesisStreamsAppender;
+import ai.exemplar.streams.impl.KinesisStreamsAppender;
 import dagger.Module;
 import dagger.Provides;
 

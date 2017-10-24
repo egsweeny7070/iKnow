@@ -162,6 +162,26 @@ public class PaymentSchema {
         this.items = items;
     }
 
+    public SquarePayment toModel() {
+        String[] id = this.getId().split("\\$", 2);
+        return new SquarePayment(
+                this.getLocation(),
+                id.length > 1 ? id[1] : null,
+                new LocalDateTimeTypeConverter()
+                        .unconvert(id[0]),
+                this.getDevice(),
+                this.getUrl(),
+                this.getTax(),
+                this.getTip(),
+                this.getDiscount(),
+                this.getCollected(),
+                this.getFee(),
+                this.getRefunded(),
+                this.getTenders(),
+                this.getItems()
+        );
+    }
+
     public static PaymentSchema fromModel(SquarePayment payment) {
         return new PaymentSchema(
                 payment.getLocation(),
