@@ -1,6 +1,9 @@
 package ai.exemplar.authorization.auth0;
 
+import ai.exemplar.api.auth0.Auth0ApiProvider;
 import ai.exemplar.authorization.AuthorizationService;
+import ai.exemplar.persistence.AccountsRepository;
+import ai.exemplar.persistence.dynamodb.schema.AccountSchema;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.jwk.JwkException;
@@ -14,6 +17,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
 import org.apache.log4j.Logger;
 
+import javax.inject.Inject;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
@@ -21,23 +25,21 @@ public class Auth0AuthorizationService implements AuthorizationService {
 
     static final Logger log = Logger.getLogger(Auth0AuthorizationService.class);
 
-    private static final String TENANT_NAME = "exemplar";
-
-    private static final String AUDIENCE_NAME = "https://api.exemplar.ai/";
-
-    private static final String CLIENT_ID = "pCyVliEG7uH0YiqTrPZmWGF80LTXBIpS";
-
-    private static final String CLIENT_SECRET = "p_9VR85bxqOjn_KP1BR21tlBZEyHMVA72dXWiFoEL8Kmrt0hHnSyIjHH5aRSQfkO";
-
     private final JWTVerifier verifier;
 
-    private final AuthAPI api;
+    private final AccountsRepository accountsRepository;
 
-    public Auth0AuthorizationService() {
+    private final Auth0ApiProvider auth0ApiProvider;
+
+    @Inject
+    public Auth0AuthorizationService(AccountsRepository accountsRepository, Auth0ApiProvider auth0ApiProvider) {
+        this.accountsRepository = accountsRepository;
+        this.auth0ApiProvider = auth0ApiProvider;
+
         verifier = JWT.require(Algorithm
                 .RSA256(new RSAKeyProvider() {
                     private final JwkProvider provider = new UrlJwkProvider(String
-                            .format("https://%s.auth0.com", TENANT_NAME));
+                            .format("https://%s.auth0.com", Auth0ApiProvider.TENANT_NAME));
 
                     @Override
                     public RSAPublicKey getPublicKeyById(String kid) {
@@ -60,15 +62,9 @@ public class Auth0AuthorizationService implements AuthorizationService {
                     }
                 }))
                 .withIssuer(String
-                        .format("https://%s.auth0.com/", TENANT_NAME))
-                .withAudience(AUDIENCE_NAME)
+                        .format("https://%s.auth0.com/", Auth0ApiProvider.TENANT_NAME))
+                .withAudience(Auth0ApiProvider.AUDIENCE_NAME)
                 .build();
-
-        api = new AuthAPI(
-                String.format("%s.auth0.com", TENANT_NAME),
-                CLIENT_ID,
-                CLIENT_SECRET
-        );
     }
 
     @Override
@@ -86,26 +82,40 @@ public class Auth0AuthorizationService implements AuthorizationService {
 
         String accessToken = token[token.length - 1];
 
+        DecodedJWT jwt;
         try {
-            DecodedJWT jwt = verifier
-                    .verify(accessToken);
-
-            log.info("authorized subject " + jwt.getSubject());
+            jwt = verifier.verify(accessToken);
 
         } catch (JWTVerificationException e) {
             log.error(e);
             return null;
         }
 
-        try {
-            return (String) api
-                    .userInfo(accessToken)
-                    .execute()
-                    .getValues().get("email");
+        String accountId = jwt.getSubject();
 
-        } catch (Auth0Exception e) {
-            log.error(e);
-            return null;
+        log.info("authorized subject " + accountId);
+
+        AccountSchema account = accountsRepository.get(accountId);
+
+        if (account == null) {
+            log.info("creating account for subject " + accountId);
+
+            String email;
+            try {
+                email = auth0ApiProvider
+                        .email(accessToken);
+
+            } catch (Throwable e) {
+                log.warn("auth0 api exception", e);
+                return null;
+            }
+
+            account = new AccountSchema(accountId, email);
+
+            accountsRepository
+                    .save(account);
         }
+
+        return account.getName();
     }
 }

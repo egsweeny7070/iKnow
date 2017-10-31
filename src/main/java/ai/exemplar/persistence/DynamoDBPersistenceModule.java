@@ -11,6 +11,14 @@ public class DynamoDBPersistenceModule {
 
     @Provides
     @Singleton
+    public static AccountsRepository provideAccountsRepository(
+            DynamoDBAccountsRepository accountsRepository
+    ) {
+        return accountsRepository;
+    }
+
+    @Provides
+    @Singleton
     public static OAuthTokenRepository provideOAuthTokensRepository(
             DynamoDBOAuthTokenRepository oAuthTokensRepository
     ) {

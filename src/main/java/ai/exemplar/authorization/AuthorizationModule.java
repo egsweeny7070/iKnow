@@ -11,7 +11,9 @@ public class AuthorizationModule {
 
     @Provides
     @Singleton
-    public static AuthorizationService provideAuthorizationService() {
-        return new Auth0AuthorizationService();
+    public static AuthorizationService provideAuthorizationService(
+            Auth0AuthorizationService authorizationService
+    ) {
+        return authorizationService;
     }
 }

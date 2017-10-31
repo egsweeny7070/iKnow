@@ -1,6 +1,7 @@
 package ai.exemplar.proxy.analytics;
 
 import ai.exemplar.analytics.AnalyticsModule;
+import ai.exemplar.api.ApiProvidersModule;
 import ai.exemplar.authorization.AuthorizationModule;
 import ai.exemplar.dependencies.DynamoDBModule;
 import ai.exemplar.persistence.DynamoDBPersistenceModule;
@@ -14,6 +15,7 @@ import javax.inject.Singleton;
 @Component(modules = {
         DynamoDBModule.class,
         DynamoDBPersistenceModule.class,
+        ApiProvidersModule.class,
         AuthorizationModule.class,
         AnalyticsModule.class,
         AnalyticsApiServiceModule.class
