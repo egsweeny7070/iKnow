@@ -69,4 +69,16 @@ public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepositor
         return spotifyHistory.scan(new DynamoDBScanExpression()
                 .withConsistentRead(false));
     }
+
+    @Override
+    public List<PlayHistoryItemSchema> recent(String key, int limit) {
+        return spotifyHistory.queryPage(
+                new DynamoDBQueryExpression<PlayHistoryItemSchema>()
+                        .withHashKeyValues(PlayHistoryItemSchema
+                                .hashKey(key))
+                        .withScanIndexForward(false)
+                        .withLimit(limit)
+                        .withConsistentRead(true)
+        ).getResults();
+    }
 }

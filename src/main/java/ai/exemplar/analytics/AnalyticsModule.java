@@ -1,6 +1,7 @@
 package ai.exemplar.analytics;
 
 import ai.exemplar.analytics.providers.payments.BasicPaymentsDiagramProvider;
+import ai.exemplar.analytics.providers.tracks.LastTracksProvider;
 import ai.exemplar.analytics.providers.tracks.histogram.MainFeaturesBaselineHistogramProvider;
 import ai.exemplar.analytics.providers.tracks.spider.FeaturesSpiderDiagramProvider;
 import dagger.Module;
@@ -34,6 +35,15 @@ public class AnalyticsModule {
     @StringKey(FeaturesSpiderDiagramProvider.PROVIDER_NAME)
     static AnalyticsProvider provideHoursSpiderDiagram(
             FeaturesSpiderDiagramProvider provider
+    ) {
+        return provider;
+    }
+
+    @Provides
+    @IntoMap
+    @StringKey(LastTracksProvider.PROVIDER_NAME)
+    static AnalyticsProvider provideLastTracks(
+            LastTracksProvider provider
     ) {
         return provider;
     }

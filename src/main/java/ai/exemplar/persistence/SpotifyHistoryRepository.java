@@ -11,4 +11,6 @@ public interface SpotifyHistoryRepository {
     void batchSave(List<PlayHistoryItemSchema> batch);
 
     List<PlayHistoryItemSchema> scan();
+
+    List<PlayHistoryItemSchema> recent(String key, int limit);
 }
