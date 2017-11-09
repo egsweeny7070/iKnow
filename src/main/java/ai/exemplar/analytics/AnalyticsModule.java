@@ -1,8 +1,11 @@
 package ai.exemplar.analytics;
 
+import ai.exemplar.analytics.providers.correlations.PriceCorrelationsProvider;
+import ai.exemplar.analytics.providers.correlations.SalesCorrelationsProvider;
 import ai.exemplar.analytics.providers.payments.BasicPaymentsDiagramProvider;
 import ai.exemplar.analytics.providers.tracks.LastTracksProvider;
 import ai.exemplar.analytics.providers.tracks.histogram.MainFeaturesBaselineHistogramProvider;
+import ai.exemplar.analytics.providers.tracks.playlists.PlaylistsPeriodsProvider;
 import ai.exemplar.analytics.providers.tracks.spider.FeaturesSpiderDiagramProvider;
 import dagger.Module;
 import dagger.Provides;
@@ -44,6 +47,33 @@ public class AnalyticsModule {
     @StringKey(LastTracksProvider.PROVIDER_NAME)
     static AnalyticsProvider provideLastTracks(
             LastTracksProvider provider
+    ) {
+        return provider;
+    }
+
+    @Provides
+    @IntoMap
+    @StringKey(PlaylistsPeriodsProvider.PROVIDER_NAME)
+    static AnalyticsProvider providePlaylistsPeriods(
+            PlaylistsPeriodsProvider provider
+    ) {
+        return provider;
+    }
+
+    @Provides
+    @IntoMap
+    @StringKey(SalesCorrelationsProvider.PROVIDER_NAME)
+    static AnalyticsProvider provideSalesCorrelations(
+            SalesCorrelationsProvider provider
+    ) {
+        return provider;
+    }
+
+    @Provides
+    @IntoMap
+    @StringKey(PriceCorrelationsProvider.PROVIDER_NAME)
+    static AnalyticsProvider providePriceCorrelations(
+            PriceCorrelationsProvider provider
     ) {
         return provider;
     }

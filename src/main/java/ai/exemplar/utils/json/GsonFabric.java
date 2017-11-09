@@ -1,12 +1,12 @@
 package ai.exemplar.utils.json;
 
-import ai.exemplar.utils.json.adapters.LocalDateTimeTypeAdapter;
-import ai.exemplar.utils.json.adapters.SimplifiedLocalDateTimeTypeAdapter;
-import ai.exemplar.utils.json.adapters.ZonedDateTimeTypeAdapter;
+import ai.exemplar.utils.json.adapters.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 
 public class GsonFabric {
@@ -21,6 +21,8 @@ public class GsonFabric {
         return new GsonBuilder()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
                 .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeTypeAdapter())
+                .registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter())
+                .registerTypeAdapter(LocalTime.class, new LocalTimeTypeAdapter())
                 .create();
     }
 

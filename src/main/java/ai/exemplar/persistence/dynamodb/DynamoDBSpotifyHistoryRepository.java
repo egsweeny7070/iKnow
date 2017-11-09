@@ -3,12 +3,17 @@ package ai.exemplar.persistence.dynamodb;
 import ai.exemplar.persistence.SpotifyHistoryRepository;
 import ai.exemplar.persistence.dynamodb.schema.spotify.PlayHistoryItemSchema;
 import ai.exemplar.utils.dynamodb.CreateTableHelper;
+import ai.exemplar.utils.dynamodb.converters.LocalDateTimeTypeConverter;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import org.apache.log4j.Logger;
 
 import javax.inject.Inject;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepository {
@@ -44,6 +49,24 @@ public class DynamoDBSpotifyHistoryRepository implements SpotifyHistoryRepositor
                 new DynamoDBQueryExpression<PlayHistoryItemSchema>()
                         .withHashKeyValues(PlayHistoryItemSchema
                                 .hashKey(key))
+                        .withConsistentRead(true)
+        );
+    }
+
+    @Override
+    public List<PlayHistoryItemSchema> list(String key, LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+        return spotifyHistory.query(
+                new DynamoDBQueryExpression<PlayHistoryItemSchema>()
+                        .withHashKeyValues(PlayHistoryItemSchema
+                                .hashKey(key))
+                        .withRangeKeyCondition("timestamp", new Condition()
+                                .withComparisonOperator(ComparisonOperator.BETWEEN)
+                                .withAttributeValueList(
+                                        new AttributeValue().withS(new LocalDateTimeTypeConverter()
+                                                .convert(timestampFrom)),
+                                        new AttributeValue().withS(new LocalDateTimeTypeConverter()
+                                                .convert(timestampTo))
+                                ))
                         .withConsistentRead(true)
         );
     }
