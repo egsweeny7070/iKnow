@@ -4,6 +4,7 @@ import ai.exemplar.analytics.AnalyticsProvider;
 import ai.exemplar.analytics.providers.correlations.values.CorrelationValue;
 import ai.exemplar.proxy.service.exceptions.NotFoundException;
 import ai.exemplar.storage.CorrelationsStorageService;
+import ai.exemplar.storage.values.CorrelationLegendEntry;
 import ai.exemplar.storage.values.LocationCorrelationsEntry;
 import org.apache.log4j.Logger;
 
@@ -33,25 +34,29 @@ public class SalesCorrelationsProvider implements AnalyticsProvider {
 
     @Override
     public Object get(String location, Map<String, String> query) {
+        final Map<String, String> canonicalNames = storageService.correlationsLegend().stream()
+                .filter(CorrelationLegendEntry::getInclude)
+                .collect(Collectors.toMap(
+                        CorrelationLegendEntry::getFeatureName,
+                        CorrelationLegendEntry::getCanonicalName
+                ));
         return Optional.ofNullable(storageService
                 .salesCorrelations().stream()
-                .collect(Collectors.toMap(LocationCorrelationsEntry::getLocationId, entry -> entry))
+                .collect(Collectors.groupingBy(LocationCorrelationsEntry::getLocationId))
                 .get(location))
-                .map(entry ->
-                        Stream.of(
-                                new CorrelationValue("Danceability", entry.getDanceability()),
-                                new CorrelationValue("Speechiness", entry.getSpeechiness()),
-                                new CorrelationValue("Instrumentalness", entry.getInstrumentalness()),
-                                new CorrelationValue("Explicit Lyrics", entry.getExplicitLyrics()),
-                                new CorrelationValue("Popularity", entry.getPopularity()),
-                                new CorrelationValue("Duration", entry.getDuration()),
-                                new CorrelationValue("Loudness", entry.getLoudness()),
-                                new CorrelationValue("Tempo", entry.getTempo()),
-                                new CorrelationValue("Acousticness", entry.getAcousticness()),
-                                new CorrelationValue("Energy", entry.getEnergy()),
-                                new CorrelationValue("Valence", entry.getValence()),
-                                new CorrelationValue("Mode", entry.getMode())
-                        )
+                .map(correlationsEntries ->
+                        correlationsEntries.stream()
+                                .filter(entry -> canonicalNames.containsKey(entry
+                                        .getFeatureName()))
+                                .map(entry -> new CorrelationValue(
+                                        canonicalNames.get(entry.getFeatureName()),
+                                        entry.getCorrelationValue() * 100.0
+                                ))
+                                .sorted(Comparator
+                                        .<CorrelationValue, Double>comparing(correlationValue -> Math
+                                                .abs(correlationValue.getCorrelationValue()))
+                                        .reversed())
+                                .limit(12)
                                 .sorted(Comparator
                                         .comparing(CorrelationValue::getCorrelationValue)
                                         .reversed())
