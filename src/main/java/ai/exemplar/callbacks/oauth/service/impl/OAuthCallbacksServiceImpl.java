@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 public class OAuthCallbacksServiceImpl implements OAuthCallbacksService {
 
@@ -35,6 +36,13 @@ public class OAuthCallbacksServiceImpl implements OAuthCallbacksService {
     public void handleCallback(InputStream input, OutputStream output) {
         try {
             LambdaRequest request = gson.fromJson(new InputStreamReader(input), LambdaRequest.class);
+
+            if (Optional.ofNullable(request.getHeaders()
+                    .get("X-Exemplar-Warm-Up"))
+                    .map(Boolean::parseBoolean)
+                    .orElse(false)) {
+                return;
+            }
 
             String provider = request.getPathParameters().get("proxy");
 

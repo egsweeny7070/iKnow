@@ -48,6 +48,13 @@ public class AnalyticsApiServiceImpl implements AnalyticsApiService {
             try {
                 LambdaRequest request = gson.fromJson(new InputStreamReader(input), LambdaRequest.class);
 
+                if (Optional.ofNullable(request.getHeaders()
+                        .get("X-Exemplar-Warm-Up"))
+                        .map(Boolean::parseBoolean)
+                        .orElse(false)) {
+                    return;
+                }
+
                 if (request.getHttpMethod().equals("OPTIONS")) {
                     IOUtils.copy(
                             new ByteArrayInputStream(
