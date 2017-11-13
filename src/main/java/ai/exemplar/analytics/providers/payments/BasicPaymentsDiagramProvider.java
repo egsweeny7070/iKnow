@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import javax.inject.Inject;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -111,6 +112,8 @@ public class BasicPaymentsDiagramProvider implements AnalyticsProvider {
                         .groupingBy(item -> item.getRowTime().toLocalDate()
                                 .getDayOfWeek()))
                 .entrySet().stream()
+                .sorted(Comparator
+                        .comparing(Map.Entry::getKey))
                 .map(localDateListEntry -> new DayPaymentsStatistics(
                         localDateListEntry.getKey().toString(),
                         localDateListEntry.getValue().stream()
