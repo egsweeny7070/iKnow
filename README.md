@@ -1,8 +1,24 @@
 # Exemplar Serverless Backend
 
-Backend is implemented as a set of AWS Lamnda functions, most with java 8 runtime (except Kinesis Analytics preprocessor and a special lambda to warm up java8 lambda containers).
+Backend is implemented as a set of AWS Lambda functions, most with java 8 runtime (except Kinesis Analytics preprocessor and a special lambda to warm up java8 lambda containers).
 
 All java 8 based lambdas shares the same codebase, using Dagger2 as dependency injection framework.
+
+
+## List of the AWS Lambda functions inside the package
+
+`ai.exemplar.callbacks.oauth.OAuthCallbacksProxyHandler` - OAuth callbacks handler;
+
+`ai.exemplar.callbacks.oauth.ScheduledEventHandler` - OAuth tokens refreshing cron job;
+
+`ai.exemplar.data.ScheduledEventHandler` - External data providers fetching cron job;
+
+`ai.exemplar.upload.KinesisEventSourceHandler` - Kinesis Stream handler to ingest analytics results;
+
+`ai.exemplar.proxy.locations.LocationsProxyHandler` - Locations API microservice;
+
+`ai.exemplar.proxy.analytics.AnalyticsProxyHandler` - Analytics API microservice;
+
 
 ## Building
 
@@ -14,16 +30,6 @@ gradlew clean build
 ```
 
 Then pick up a zip distribution in `build/distr` directory and upload it to AWS.
-
-
-## List of the functions inside the package
-
-OAuth callbacks handler `ai.exemplar.callbacks.oauth.OAuthCallbacksProxyHandler`;
-OAuth tokens refreshing cron job `ai.exemplar.callbacks.oauth.ScheduledEventHandler`;
-External data providers fetching cron job `ai.exemplar.data.ScheduledEventHandler`;
-Kinesis Stream handler to ingest analytics results `ai.exemplar.upload.KinesisEventSourceHandler`;
-Locations API microservice `ai.exemplar.proxy.locations.LocationsProxyHandler`;
-Analytics API microservice `ai.exemplar.proxy.analytics.AnalyticsProxyHandler`;
 
 
 ## Integration Jobs
